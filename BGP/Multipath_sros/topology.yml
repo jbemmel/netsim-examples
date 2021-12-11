@@ -22,6 +22,7 @@ nodes:
   m:
   rr:
     device: sros
+    license: /Projects/SR_OS_VSR-SIM_license.txt
     bgp.rr: True
     id: 1
   y:

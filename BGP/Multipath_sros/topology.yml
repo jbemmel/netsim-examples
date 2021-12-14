@@ -9,7 +9,7 @@ bgp.as: 65000
 groups:
   net:
     members: [ a,b,c,d,m,rr ]
-    config: [ bgp-addpath.j2 ]
+    config: [ bgp-addpath.j2 ] # Doesn't work at node level only
   ext:
     members: [ y ]
     config: [ test-loopback.j2 ]
@@ -19,7 +19,9 @@ nodes:
   b:
   c:
   d:
-  m:
+  m: # SRL does not support ADD_PATH capabiility
+    device: sros
+    license: /Projects/SR_OS_VSR-SIM_license.txt
   rr:
     device: sros
     license: /Projects/SR_OS_VSR-SIM_license.txt

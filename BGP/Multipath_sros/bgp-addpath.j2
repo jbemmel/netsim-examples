@@ -1,0 +1,11 @@
+{% if ansible_network_os == 'sros' -%}
+updates:
+- path: configure/router[router-name=Base]/bgp
+  val:
+   add-paths:
+    ipv4:
+     send: multipaths
+     receive: True
+   best-path-selection: # Need this, else D wins over C due to OSPF cost metric
+    ignore-nh-metric: True
+{%- endif %}

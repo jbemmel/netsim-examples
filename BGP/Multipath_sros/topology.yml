@@ -12,7 +12,7 @@ groups:
     config: [ bgp-addpath.j2 ] # Doesn't work at node level only
   ext:
     members: [ y ]
-    config: [ test-loopback.j2 ]
+    # config: [ test-loopback.j2 ] # using 'generate-icmp true' in SRL
 
 nodes:
   a:

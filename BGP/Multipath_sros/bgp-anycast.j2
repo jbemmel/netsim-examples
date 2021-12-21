@@ -1,4 +1,5 @@
 {% set anycast_ip="10.0.0.45" %}
+{% if ansible_network_os == 'sros' %}
 updates:
 - path: configure/policy-options/prefix-list[name=anycast_ip]
   val:
@@ -37,3 +38,30 @@ replace:
 - path: configure/router[router-name=Base]/bgp/group[group-name=ibgp]/export
   val:
    policy: ["set_anycast_nexthop"]
+{% elif ansible_network_os == 'srlinux' %}
+
+delete:
+- network-instance[name=default]/protocols/bgp
+
+updates:
+- path: system/gnmi-server/unix-socket
+  val:
+   admin-state: enable
+
+- path: network-instance[name=default]/protocols/experimental-frr
+  val:
+   admin-state: enable
+   autonomous-system: {{ bgp.as }}
+   router-id: {{ loopback['ipv4']|ipaddr('address') }}
+   group:
+   - group-name: "ibgp"
+     ipv4-unicast:
+      admin-state: enable
+   neighbor:
+   - peer-address: 10.0.0.1
+     peer-group: ibgp
+   bgp:
+    port: 179
+    anycast-nexthop: {{ anycast_ip }}
+
+{% endif %}

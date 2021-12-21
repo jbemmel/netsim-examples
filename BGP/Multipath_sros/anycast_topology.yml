@@ -27,8 +27,11 @@ nodes:
   a:
   b:
   c: # SRL does not support arbitrary next hop IPs
-    device: sros
-    license: /Projects/SR_OS_VSR-SIM_license.txt
+    # device: sros
+    # license: /Projects/SR_OS_VSR-SIM_license.txt
+    clab:
+      image: srl/frr-demo:latest
+      srl-agents: [ ../../../srl-frr-agent/srl-frr-agent.yml ]
   d:
     device: sros
     license: /Projects/SR_OS_VSR-SIM_license.txt

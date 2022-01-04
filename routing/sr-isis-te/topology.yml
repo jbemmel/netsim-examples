@@ -10,10 +10,18 @@ provider: clab
 
 module: [ bfd, isis, sr ]
 
-plugin: [ epipe, mpls-te ]
+plugin: [ epipe, mpls-te, macsec ]
 
 defaults:
   # custom_link_types: [ epipe ]
+
+  # This is required for 'macsec' to be copied into host_vars
+  extra_attributes:
+    link: [ macsec ]
+
+  isis.extra_attributes.global: [ traffic_engineering,loop_free_alternate ]
+  isis.extra_attributes.node: [ traffic_engineering,loop_free_alternate ]
+
   device: sros
   devices:
    sros:
@@ -27,10 +35,16 @@ defaults:
         sros:
           provider_type: sr-1s-macsec # Added to vrnetlab to support macsec
 
-isis.traffic_engineering: True
-isis.loop_free_alternate: True
+isis:
+  traffic_engineering: True
+  loop_free_alternate: True
+  bfd:
+    ipv4: True
+    ipv6: True
 
 addressing:
+  p2p:
+    macsec: True # Doesn't work
   lan:
     ipv4: 192.168.1.0/24 # "Must be longer than /24"
     macsec: # Custom parameters used by macsec plugin, ends up in group_vars
@@ -57,6 +71,7 @@ nodes:
   r2:
     device: sros
     license: /Projects/SR_OS_VSR-SIM_license.txt
+
   r3:
     device: sros
     license: /Projects/SR_OS_VSR-SIM_license.txt
@@ -81,13 +96,41 @@ links:
 - r2-r4
 - r3-r4
 
+- type: stub
+  bridge: r1-loop
+  prefix: False
+  r1:
+    epipe: r4
+    traffic_engineering_path: [ r3, r2, r4 ]
+- type: stub
+  bridge: r1-loop
+  prefix: False
+  macsec: True
+  r1:
+    local_epipe: 1
+    # macsec: True
+
+- type: stub
+  bridge: r4-loop
+  prefix: False
+  r4:
+    epipe: r1
+- type: stub
+  bridge: r4-loop
+  prefix: False
+  macsec: True
+  r4:
+    local_epipe: 1
+    # macsec: True
+
 - type: lan
   # role: lan cannot use this, assigns different prefixes from pool
   prefix: 192.168.1.0/24
   r1:
     ipv4: False
-    epipe: r4
-    traffic_engineering_path: [ r3, r2, r4 ]
+    local_epipe: 1
+    # epipe: r4
+    # traffic_engineering_path: [ r3, r2, r4 ]
   h1:
     ipv4: 1 # Relative IP addressing offset into prefix
 
@@ -96,7 +139,8 @@ links:
   prefix: 192.168.1.0/24
   r4:
     ipv4: False
-    epipe: r1
+    local_epipe: 1
+    # epipe: r1
   h2:
     ipv4: 2
 

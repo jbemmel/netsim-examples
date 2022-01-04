@@ -34,3 +34,19 @@ updates:
 {% endfor %}
 
 {# FFS: MACsec encryption #}
+
+{% for l in links if 'local_epipe' in l %}
+{% for l2 in links if 'local_epipe' in l2 and l!=l2 and l.local_epipe==l2.local_epipe %}
+{% set svc_id = 100 + l.ifindex %}
+- path: configure/service/epipe[service-name=local-{{l.local_epipe}}]
+  val:
+   admin-state: enable
+   customer: "1"
+   service-id: {{ svc_id }}
+   sap:
+   - sap-id: "{{ l.ifname }}{{ '/1' if 'c' in l.ifname else '' }}"
+     admin-state: enable
+   - sap-id: "{{ l2.ifname }}{{ '/1' if 'c' in l2.ifname else '' }}"
+     admin-state: enable
+{% endfor %}
+{% endfor %}

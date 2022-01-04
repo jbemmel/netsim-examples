@@ -93,41 +93,41 @@ links:
 - r2-r4
 - r3-r4
 
-# - type: stub
-#   bridge: r1-loop
-#   prefix: False
-#   r1:
-#     epipe: r4
-#     traffic_engineering_path: [ r3, r2, r4 ]
-# - type: stub
-#   bridge: r1-loop
-#   prefix: False
-#   macsec: True
-#   r1:
-#     local_epipe: 1
-#     # macsec: True
+- type: stub
+  bridge: r1-loop
+  prefix: False
+  r1:
+   epipe: r4
+   traffic_engineering_path: [ r3, r2, r4 ]
+- type: stub
+  bridge: r1-loop
+  prefix: False
+  macsec: True
+  r1:
+   local_epipe: 1
+   # macsec: True
 
-# - type: stub
-#   bridge: r4-loop
-#   prefix: False
-#   r4:
-#     epipe: r1
-# - type: stub
-#   bridge: r4-loop
-#   prefix: False
-#   macsec: True
-#   r4:
-#     local_epipe: 1
-#     # macsec: True
+- type: stub
+  bridge: r4-loop
+  prefix: False
+  r4:
+   epipe: r1
+- type: stub
+  bridge: r4-loop
+  prefix: False
+  macsec: True
+  r4:
+   local_epipe: 1
+   # macsec: True
 
 - type: lan
   # role: lan cannot use this, assigns different prefixes from pool
   prefix: 192.168.1.0/24
   r1:
     ipv4: False
-    # local_epipe: 1
-    epipe: r4
-    traffic_engineering_path: [ r3, r2, r4 ]
+    local_epipe: 1
+    # epipe: r4
+    # traffic_engineering_path: [ r3, r2, r4 ]
   h1:
     ipv4: 1 # Relative IP addressing offset into prefix
 
@@ -136,8 +136,8 @@ links:
   prefix: 192.168.1.0/24
   r4:
     ipv4: False
-    # local_epipe: 1
-    epipe: r1
+    local_epipe: 1
+    # epipe: r1
   h2:
     ipv4: 2
 

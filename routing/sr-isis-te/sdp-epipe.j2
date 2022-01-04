@@ -25,7 +25,7 @@ updates:
    admin-state: enable
    customer: "1"
    service-id: {{ svc_id }}
-   service-mtu: {{ 1514 + 32 }}
+   # service-mtu: {{ 1514 + 32 }}
    spoke-sdp:
    - sdp-bind-id: "{{ l.ifindex }}:{{ svc_id }}"
      admin-state: enable
@@ -34,9 +34,9 @@ updates:
    - sap-id: "{{ port_id }}"
      admin-state: enable
 
-- path: configure/port[port-id={{port_id}}]/ethernet
-  val:
-   mtu: {{ 1514 + 32 }} # To support MACsec
+# - path: configure/port[port-id={{port_id}}]/ethernet
+#   val:
+#    mtu: {{ 1514 + 32 }} # To support MACsec
 
 {% endfor %}
 

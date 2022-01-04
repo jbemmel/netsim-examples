@@ -1,6 +1,12 @@
 {# epipe modeled as a virtual link between r1-r4 #}
 updates:
 {% for l in links if 'te_path_ips' in l %}
+
+{# Enable traffic engineering for IS-IS #}
+- path: configure/router[router-name=Base]/isis[isis-instance=0]
+  val:
+   traffic-engineering: True
+
 {% set lsp_name = "lsp_" + l.traffic_engineering_path|join('-') + "-TE" %}
 - path: configure/router[router-name=Base]/mpls
   val:

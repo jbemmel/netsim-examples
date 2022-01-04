@@ -16,12 +16,12 @@ updates:
 
 - path: configure/port[port-id={{port_id}}]/ethernet
   val:
-   mtu: {{ 1514 + 32 }} # Operational MTU reduced by 32 due to MACsec
+   # mtu: {{ 1514 + 32 }} # Operational MTU reduced by 32 due to MACsec
    dot1x:
     macsec:
      sub-port:
      - sub-port-id: 1
-       admin-state: enable
+       admin-state: disable # while fixing mtu
        ca-name: "{{ macsec.ca_name }}"
        max-peers: 1
 
@@ -30,7 +30,7 @@ updates:
 {% set port2_id = l2.ifname + ('/1' if 'c' in l2.ifname else '') %}
 - path: configure/port[port-id={{port2_id}}]/ethernet
   val:
-   mtu: {{ 1514 + 32 }} # To support MACsec
+   # mtu: {{ 1514 + 32 }} # To support MACsec
    dot1x:
     tunneling: True
 {% endfor %}

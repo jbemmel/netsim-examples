@@ -14,18 +14,25 @@ updates:
       cak: {{ macsec.cak }}
       cak-name: {{ macsec.cak_name }}
 
-- path: configure/port[port-id={{port_id}}]/ethernet/dot1x/macsec/sub-port[sub-port-id=1]
+- path: configure/port[port-id={{port_id}}]/ethernet
   val:
-   admin-state: enable
-   ca-name: "{{ macsec.ca_name }}"
-   max-peers: 1
+   mtu: {{ 1514 + 32 }} # Operational MTU reduced by 32 due to MACsec
+   dot1x:
+    macsec:
+     sub-port:
+     - sub-port-id: 1
+       admin-state: enable
+       ca-name: "{{ macsec.ca_name }}"
+       max-peers: 1
 
 {# Enable 802.1x tunneling on the peer port #}
 {% for l2 in links if 'macsec' not in l2 and l.bridge|default('x')==l2.bridge|default('y') %}
 {% set port2_id = l2.ifname + ('/1' if 'c' in l2.ifname else '') %}
-- path: configure/port[port-id={{port2_id}}]/ethernet/dot1x
+- path: configure/port[port-id={{port2_id}}]/ethernet
   val:
-   tunneling: True
+   mtu: {{ 1514 + 32 }} # To support MACsec
+   dot1x:
+    tunneling: True
 {% endfor %}
 
 {% endfor %}

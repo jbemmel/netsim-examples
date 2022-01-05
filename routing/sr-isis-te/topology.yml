@@ -52,7 +52,7 @@ addressing:
 groups:
   sros:
     members: [ r1,r4 ]
-    config: [ sdp-epipe.j2 ] # macsec.j2
+    config: [ sdp-epipe.j2, macsec.j2 ]
   srlinux:
     members: [ r2,r3 ]
   hosts:

@@ -16,8 +16,9 @@ defaults:
   # custom_link_types: [ epipe ]
 
   # This is required for 'macsec' to be copied into host_vars
-  extra_attributes:
-    link: [ macsec ]
+  # when defined as link level attribute. Interface level is ok
+  # extra_attributes:
+  #  link: [ macsec ]
 
   # isis.extra_attributes.global: [ traffic_engineering,loop_free_alternate ]
   # isis.extra_attributes.node: [ traffic_engineering,loop_free_alternate ]
@@ -108,7 +109,10 @@ links:
 #    # macsec: True
 - interfaces:
   - node: r1
+    epipe: r4
   - node: r1
+    local_epipe: 1
+    macsec: SecureLink
   prefix: False
 
 # - type: stub
@@ -125,7 +129,10 @@ links:
 #    # macsec: True
 - interfaces:
   - node: r4
+    epipe: r1
   - node: r4
+    local_epipe: 1
+    macsec: SecureLink
   prefix: False
 
 

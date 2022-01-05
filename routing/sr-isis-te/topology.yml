@@ -93,32 +93,41 @@ links:
 - r2-r4
 - r3-r4
 
-- type: stub
-  bridge: r1-loop
+# - type: stub
+#   bridge: r1-loop
+#   prefix: False
+#   r1:
+#    epipe: r4
+#    traffic_engineering_path: [ r3, r2, r4 ]
+# - type: stub
+#   bridge: r1-loop
+#   prefix: False
+#   macsec: True
+#   r1:
+#    local_epipe: 1
+#    # macsec: True
+- interfaces:
+  - node: r1
+  - node: r1
   prefix: False
-  r1:
-   epipe: r4
-   traffic_engineering_path: [ r3, r2, r4 ]
-- type: stub
-  bridge: r1-loop
-  prefix: False
-  macsec: True
-  r1:
-   local_epipe: 1
-   # macsec: True
 
-- type: stub
-  bridge: r4-loop
+# - type: stub
+#   bridge: r4-loop
+#   prefix: False
+#   r4:
+#    epipe: r1
+# - type: stub
+#   bridge: r4-loop
+#   prefix: False
+#   macsec: True
+#   r4:
+#    local_epipe: 1
+#    # macsec: True
+- interfaces:
+  - node: r4
+  - node: r4
   prefix: False
-  r4:
-   epipe: r1
-- type: stub
-  bridge: r4-loop
-  prefix: False
-  macsec: True
-  r4:
-   local_epipe: 1
-   # macsec: True
+
 
 - type: lan
   # role: lan cannot use this, assigns different prefixes from pool

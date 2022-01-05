@@ -1,6 +1,7 @@
 {# epipe modeled as a virtual link between r1-r4 #}
+{% set te_links = links|selectattr('te_path_ips','defined')|list %}
 updates:
-{% for l in links if 'te_path_ips' in l %}
+{% for l in te_links %}
 
 {# Enable traffic engineering for IS-IS #}
 - path: configure/router[router-name=Base]/isis[isis-instance=0]
@@ -38,6 +39,7 @@ updates:
 
 {% endfor %}
 
+{% if te_links != [] %}
 # RSVP must be present along with mpls, even though it is not used here
 - path: configure/router[router-name=Base]/rsvp
   val: {}
@@ -45,3 +47,4 @@ updates:
 # Remove system interface from MPLS
 delete:
 - configure/router[router-name=Base]/mpls/interface[interface-name=system]
+{% endif %}

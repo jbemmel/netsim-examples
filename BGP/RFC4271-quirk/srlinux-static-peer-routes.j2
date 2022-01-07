@@ -1,0 +1,20 @@
+{#
+   Configure static route(s) to the loopback of each peer
+#}
+updates:
+
+{% for n in bgp.neighbors %}
+{% for af in ['ipv4','ipv6'] if n.loopback[af] is defined %}
+- path: network-instance[name=default]/next-hop-groups/group[name={{n.name}}]
+  val:
+   admin-state: enable
+   nexthop:
+   - index: {{ n.ifindex }}
+     ip-address: {{ n[af] }}
+
+- path: network-instance[name=default]/static-routes/route[prefix={{n.loopback[af]}}]
+  val:
+   next-hop-group: {{ n.name }}
+
+{% endfor %}
+{% endfor %}

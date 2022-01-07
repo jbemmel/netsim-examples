@@ -1,0 +1,26 @@
+module: [ bgp ]
+provider: clab
+
+addressing:
+  loopback:
+    ipv4: 10.0.0.0/24
+
+defaults:
+  device: srlinux
+  bgp.extra_attributes.global: [ ebgp_on_loopback ]
+  bgp.extra_attributes.node: [ ebgp_on_loopback ]
+
+bgp.ebgp_on_loopback: True
+
+groups:
+  all:
+    config: [ srlinux-static-peer-routes.j2 ]
+
+nodes:
+  r1:
+    bgp.as: 64800
+  e1:
+    bgp.as: 65000
+    bgp.originate: [ 10.7.1.0/24 ]
+
+links: [ r1-e1, r1-e1 ]

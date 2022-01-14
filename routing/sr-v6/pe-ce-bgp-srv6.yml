@@ -1,0 +1,108 @@
+#
+# SRv6 over ISIS with BGP, like https://www.juniper.net/documentation/us/en/software/junos/is-is/topics/example/isis-configuring-srv6-network-programming.html
+#
+#
+
+provider: clab
+
+module: [ isis, srv6 ] # removed bfd
+
+# plugin: [ srv6 ]
+
+defaults:
+  device: sros
+
+addressing:
+  p2p:
+    ipv6: 2001:1::/48 # SRv6 requires ipv6 addresses on interfaces
+    ipv4: False
+  loopback:
+    ipv6: 2001::/32   # And ipv6 system loopback IPs
+    # ipv4: False     # need ipv4 for router-ids
+
+# isis.bfd.ipv6: True # Use ipv6 bfd too
+srv6.locator: 2001:db8
+
+bgp:
+  peering:
+    ibgp:
+      ipv4: False # Disable ipv4 peering
+  address_families:
+    ibgp: [ ipv4 ] # Only send IPv4 routes, not IPv6
+  as_list:
+    65550:
+      members: [ r0,r2,r7 ]
+      rr: [ r2 ]
+
+groups:
+  v4_edge:
+    members: [ r0,r7 ]
+  v6_core:
+    members: [ r1,r2,r3,r4,r5,r6 ]
+  ibgp:
+    members: [ r0,r2,r7 ]
+    config: [ bgp-v4-over-v6.j2 ]
+  hosts:
+    members: [ h1,h2 ]
+
+nodes:
+  # Edge router
+  r0:
+    module: [ isis, srv6, bgp ]
+    srv6.fpe: True
+
+  # IPv6 Core routers
+  r1:
+  r2:
+    module: [ isis, srv6, bgp ]
+  r3:
+  r4:
+  r5:
+  r6:
+
+# Edge router
+  r7:
+    module: [ isis, srv6, bgp ]
+    srv6.fpe: True
+
+  # Hosts connected to edges
+  h1:
+    device: linux
+    module: []
+  h2:
+    device: linux
+    module: []
+
+links:
+# Core links
+- r0-r1
+- r0-r4
+- r1-r2
+- r1-r4
+- r1-r5
+- r2-r3
+- r2-r4
+- r2-r5
+- r2-r6
+- r3-r5
+- r3-r6
+- r3-r7
+- r4-r5
+- r5-r6
+- r6-r7
+
+# Host 1
+- r0:
+  h1:
+  role: external
+  prefix:
+   ipv4: 172.16.10.0/24
+   ipv6: False
+
+# Host 2
+- r7:
+  h2:
+  role: external
+  prefix:
+   ipv4: 172.16.20.0/24
+   ipv6: False

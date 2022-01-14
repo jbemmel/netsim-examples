@@ -1,0 +1,8 @@
+updates:
+{# Enable IPv6 next hops for IPv4 routes #}
+- path: configure/router[router-name=Base]/bgp
+  val:
+   extended-nh-encoding:
+    ipv4: True
+   advertise-ipv6-next-hops:
+    ipv4: True

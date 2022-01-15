@@ -21,7 +21,10 @@ addressing:
     # ipv4: False     # need ipv4 for router-ids
 
 # isis.bfd.ipv6: True # Use ipv6 bfd too
-srv6.locator: 2001:db8
+srv6:
+  locator: 2001:db8:aaaa
+  bgp: True
+  address_families: [ ipv4 ]
 
 bgp:
   peering:
@@ -37,11 +40,11 @@ bgp:
 groups:
   v4_edge:
     members: [ r0,r7 ]
+    # config: [ bgp-set-srv6-nexthop.j2 ]
   v6_core:
     members: [ r1,r2,r3,r4,r5,r6 ]
   ibgp:
     members: [ r0,r2,r7 ]
-    config: [ bgp-v4-over-v6.j2 ]
   hosts:
     members: [ h1,h2 ]
 
@@ -54,13 +57,14 @@ nodes:
   # IPv6 Core routers
   r1:
   r2:
-    module: [ isis, srv6, bgp ]
+    module: [ isis, srv6, bgp ] # RR needs srv6 too
+    srv6.bgp: False
   r3:
   r4:
   r5:
   r6:
 
-# Edge router
+  # Edge router
   r7:
     module: [ isis, srv6, bgp ]
     srv6.fpe: True

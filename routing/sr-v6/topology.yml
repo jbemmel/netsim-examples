@@ -24,6 +24,7 @@ addressing:
 srv6:
   locator: 2001:db8:aaaa
   bgp: True
+  isis: False
   address_families: [ ipv4 ]
 
 bgp:

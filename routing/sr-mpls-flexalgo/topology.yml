@@ -1,0 +1,130 @@
+#
+# SR-MPLS over ISIS with BGP, like IPv4-over-SRv6 but using MPLS transport
+# and FlexAlgo to use non-shortest-path routes
+#
+
+provider: clab
+
+module: [ isis, sr ] # srv6 -> sr
+
+defaults:
+  device: sros
+  extra_attributes:
+    link: [ delay ] # For flex-algo
+  sr.extra_attributes.node: [ advertise_flex_algo ]
+
+addressing:
+  p2p:
+    ipv6: True # Must both be unnumbered
+    ipv4: True # unnumbered
+  loopback:
+    ipv6: 2001::/32   # And ipv6 system loopback IPs
+    # ipv4: False     # need ipv4 for router-ids
+
+# isis.bfd.ipv6: True # Use ipv6 bfd too
+
+sr.bgp: True # Enable labeled routes
+
+bgp:
+  peering:
+    ibgp:
+      ipv4: False # Disable ipv4 peering
+  address_families:
+    ebgp: []
+    ibgp: [ label-ipv4 ] # Only send labeled IPv4 routes, not plain IPv4/v6
+  as_list:
+    65550:
+      members: [ r0,r2,r7 ]
+      rr: [ r2 ]
+
+groups:
+  v4_edge:
+    members: [ r0,r7 ]
+    config: [ flex-algo.j2 ]
+  v6_core:
+    members: [ r1,r2,r3,r4,r5,r6 ]
+    config: [ flex-algo.j2 ]
+  ibgp:
+    members: [ r0,r2,r7 ]
+  hosts:
+    members: [ h1,h2 ]
+
+nodes:
+  # Edge router
+  r0:
+    module: [ isis, sr, bgp ]
+    sr.advertise_flex_algo: True
+
+  # IPv6 Core routers
+  r1:
+  r2:
+    module: [ isis, sr, bgp ]
+  r3:
+  r4:
+  r5:
+  r6:
+
+  # Edge router
+  r7:
+    module: [ isis, sr, bgp ]
+    sr.advertise_flex_algo: True
+
+  # Hosts connected to edges
+  h1:
+    device: linux
+    module: []
+  h2:
+    device: linux
+    module: []
+
+links:
+# Core links
+- r0:
+  r1:
+  delay: 10000 # 10 ms
+- r0:
+  r4:
+  delay: 20000 # 20 ms
+- r1:
+  r2:
+  delay: 10000
+- r1:
+  r4:
+  delay: 30000
+- r1:
+  r5:
+  delay: dynamic
+- r2:
+  r3:
+  delay: 10000
+- r2-r4
+- r2-r5
+- r2-r6
+- r3:
+  r5:
+  delay: 5000
+- r3-r6
+- r3-r7
+- r4-r5
+- r5:
+  r6:
+  delay: 10000
+- r6:
+  r7:
+  delay: 5000
+
+# Host 1
+- r0:
+  h1:
+  role: external
+  prefix:
+   ipv4: 172.16.10.0/24
+   ipv6: False
+
+# Host 2
+- r7:
+  h2:
+  role: external
+  prefix:
+   ipv4: 172.16.20.0/24
+   ipv6: False

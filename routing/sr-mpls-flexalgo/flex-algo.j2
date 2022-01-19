@@ -1,0 +1,75 @@
+{% set links_with_te_delay = interfaces|selectattr('delay','defined')|list %}
+
+# Remove system interface from MPLS
+# delete:
+# - configure/router[router-name=Base]/mpls/interface[interface-name=system]
+
+updates:
+
+{# Configure FAD with delay criterium #}
+{% if sr.advertise_flex_algo|default(False) %}
+- path: configure/routing-options/flexible-algorithm-definitions
+  val:
+   flex-algo:
+    flex-algo-name: "FlexAlgo-128"
+    admin-state: enable
+    description: "FlexAlgo-128-Delay-Metric"
+    metric-type: delay
+{% endif %}
+
+{# Enable traffic engineering for IS-IS, advertise Flex-Algo #}
+- path: configure/router[router-name=Base]/isis[isis-instance=0]
+  val:
+   traffic-engineering: True
+   traffic-engineering-options:
+    application-link-attributes: { } # Enable ASLAs
+   flexible-algorithms:
+    admin-state: enable
+    flex-algo:
+    - flex-algo-id: 128
+      participate: True
+{% if sr.advertise_flex_algo|default(False) %}
+      advertise: "FlexAlgo-128"
+{% endif %}
+      loopfree-alternate: { }
+      # micro-loop-avoidance: { }
+   interface:
+   - interface-name: system
+     flex-algo:
+     - flex-algo-id: 128
+       ipv4-node-sid:
+        index: "{{ id + 200 }}" # Assign Prefix Node SID at egress node
+
+# RSVP must be present along with mpls, even though it is not used here
+# - path: configure/router[router-name=Base]/rsvp
+#  val: {}
+
+- path: configure/test-oam
+  val:
+   link-measurement:
+    measurement-template:
+    - template-name: "avg-delay"
+      admin-state: enable
+      delay: "avg"
+   twamp:
+    server:
+     admin-state: enable
+     prefix:
+     - ip-prefix: 0.0.0.0/0
+
+{% for l in links_with_te_delay %}
+- path: configure/router[router-name=Base]/interface[interface-name=i{{l.ifname}}]
+  val:
+   if-attribute:
+    delay:
+{% if l.delay|int > 0 %}
+     static: {{ l.delay }} # in us
+{% else %}
+     dynamic:
+      measurement-template: avg-delay
+      twamp-light:
+       ipv4:
+        admin-state: enable
+        # destination: {{ l.neighbors[0].ipv4 }} # Auto? How? this is unnumbered
+{% endif %}
+{% endfor %}

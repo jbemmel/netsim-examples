@@ -23,7 +23,6 @@ For convenience, I [added the following to vrnetlab](https://github.com/jbemmel/
             mda="m4-1g-tx+20-1g-sfp+6-10g-sfp+",
             integrated=True,
         ),
-        "power": {"modules": {"ac/hv": 3, "dc": 4}},
     }
 ```
 

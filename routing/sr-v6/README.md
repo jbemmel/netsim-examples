@@ -11,7 +11,7 @@ is supported.
 
 ![image](https://user-images.githubusercontent.com/2031627/150256373-c52931c8-86d9-4f48-91d8-2b2def0f2dc0.png)
 
-For convenience, I added the following to vrnetlab:
+For convenience, I [added the following to vrnetlab](https://github.com/jbemmel/vrnetlab/blob/jvb-refactor-model-provisioning/sros/docker/launch.py#L149):
 ```
 "ixr-ec": {
         "deployment_model": "integrated",

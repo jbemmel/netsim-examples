@@ -7,8 +7,10 @@ Edge nodes R0 and R8 form an SRv6-tunnel to transport IPv4 packets between Linux
 
 # 7250 IXR support for SRv6
 To answer a question about SRv6 support on 7250 IXR (being a non-FP platform), we can check [the VSR guide](https://documentation.nokia.com/cgi-bin/dbaccessfilename.cgi/3HE17166AAADTQZZA01_V1_vSIM%20Installation%20and%20Setup%20Guide%2021.10.R1.pdf) to see that the [IXR-ec](https://onestore.nokia.com/asset/206825)
+is supported.
 ![image](https://user-images.githubusercontent.com/2031627/150256373-c52931c8-86d9-4f48-91d8-2b2def0f2dc0.png)
-is supported. For convenience, I added the following to vrnetlab:
+
+For convenience, I added the following to vrnetlab:
 ```
 "ixr-ec": {
         "deployment_model": "integrated",

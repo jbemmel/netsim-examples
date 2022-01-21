@@ -1,0 +1,33 @@
+interfaces {
+{% for l in interfaces | default([]) %}
+{%   if not (l.role is defined and l.role == "external") %}
+    {{ l.ifname }} {
+        mtu 9192;
+        unit 0 {
+            family mpls;
+        }
+    }
+{%   endif %}
+{% endfor %}
+}
+protocols {
+    rsvp {
+{% for l in interfaces | default([]) %}
+{%   if not (l.role is defined and l.role == "external") %}
+        interface {{ l.ifname }}.0;
+{%   endif %}
+{% endfor %}
+    }
+    mpls {
+{% for l in interfaces | default([]) %}
+{%   if not (l.role is defined and l.role == "external") %}
+        interface {{ l.ifname }}.0;
+{%   endif %}
+{% endfor %}
+    }
+}
+{% if bgp.router_id is defined %}
+routing-options {
+    router-id {{ bgp.router_id|ipv4 }};
+}
+{% endif %}

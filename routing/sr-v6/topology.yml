@@ -60,13 +60,12 @@ nodes:
   # Edge router
   r0:
     module: [ isis, srv6, bgp ]
-    srv6.fpe: True
 
   # IPv6 Core routers
   r1:
   r2:
     module: [ isis, srv6, bgp ] # RR needs srv6 too
-    srv6.bgp: False
+    srv6.transit_only: True     # Could apply this to r1-r6 too
   r3:
   r4:
   r5:
@@ -75,7 +74,6 @@ nodes:
   # Edge router
   r7:
     module: [ isis, srv6, bgp ]
-    srv6.fpe: True
 
   # Hosts connected to edges
   h1:

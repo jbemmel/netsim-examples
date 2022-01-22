@@ -1,0 +1,91 @@
+module: [ bgp, evpn ] # iBGP for EVPN overlay, eBGP as IGP
+
+provider: clab
+
+defaults.device: srlinux
+
+defaults.frr.image.clab: frrouting/frr:v8.1.0
+
+evpn.as: 65000 # Primary AS: overlay (for auto-RD/RT to work correctly)
+
+bgp:
+  as_list:
+    65000: # EVPN overlay
+      members: [ leaf1a,leaf1b,leaf2a,leaf2b,spine1,spine2,h1,h2 ]
+      rr: [ spine1,spine2 ]
+
+    # eBGP underlay
+    65001:
+      members: [ leaf1a ]
+    65002:
+      members: [ leaf1b ]
+    65003:
+      members: [ leaf2a ]
+    65004:
+      members: [ leaf2b ]
+    65005:
+      members: [ spine1,spine2 ]
+    65100:
+      members: [ isp ]
+
+groups:
+  fabric:
+    members: [ leaf1a,leaf1b,leaf2a,leaf2b,spine1,spine2 ]
+  internet:
+    members: [ isp ]
+  hosts:
+    members: [ h1,h2 ]
+
+nodes:
+  leaf1a:
+    module: [ bgp, evpn ] # TODO vxlan
+  leaf1b:
+    module: [ bgp ] # TODO evpn, vxlan
+  leaf2a:
+    module: [ bgp ] # TODO evpn, vxlan
+  leaf2b:
+    module: [ bgp ] # TODO evpn, vxlan
+
+  spine1:
+    device: sros
+    module: [ bgp, evpn ]
+  spine2:
+    device: sros
+
+  isp:
+    bgp.as: 65100
+
+  h1:
+    device: frr
+    module: [ bgp, evpn ] # TODO vxlan
+  h2:
+    device: frr
+    module: [ bgp ]
+
+links:
+- leaf1a-spine1
+- leaf1a-spine2
+- leaf1b-spine1
+- leaf1b-spine2
+- leaf2a-spine1
+- leaf2a-spine2
+- leaf2b-spine1
+- leaf2b-spine2
+
+- spine1:
+  isp:
+  role: external
+
+- spine2:
+  isp:
+  role: external
+
+# Host dual connected, ECMP VXLAN (routed)
+- h1:
+  leaf1a:
+- h1:
+  leaf1b:
+- h2:
+  leaf2a:
+- h2:
+  leaf2b:

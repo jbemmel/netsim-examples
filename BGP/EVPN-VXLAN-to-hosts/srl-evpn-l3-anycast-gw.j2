@@ -1,0 +1,67 @@
+{#
+ These gNMI YANG updates provision a L2 + (optionally) L3 VNI,
+ with anycast gateway on SR Linux
+
+ The configuration differs depending on the evpn.use_symmetric_irb flag:
+ * Symmetric ( i.e. both originating and terminating VTEP perform route lookup )
+ * Asymmetric ( i.e. only originating VTEP performs route lookup )
+
+#}
+updates:
+{% for vni in vxlan.vnis %}
+- path: tunnel-interface[name=vxlan0]/vxlan-interface[index={{vni}}]
+  val:
+   type: bridged # L2 VNI
+   ingress:
+    vni: {{ vni }}
+   egress:
+    source-ip: use-system-ipv4-address
+
+{% if evpn.use_symmetric_irb|default(True) %}
+- path: tunnel-interface[name=vxlan0]/vxlan-interface[index={{vni+1}}]
+  val:
+   type: routed # L3 VNI
+   ingress:
+    vni: {{ vni+1 }}
+   egress:
+    source-ip: use-system-ipv4-address
+{% endif %}
+
+- path: network-instance[name=overlay-router-l2-{{vni}}]
+  val:
+   type: mac-vrf
+   admin-state: enable
+   vxlan-interface:
+   - name: vxlan0.{{vni}}
+   protocols:
+    bgp-evpn:
+     bgp-instance:
+     - id: 1
+       admin-state: enable
+       vxlan-interface: vxlan0.{{vni}}
+       evi: {{ vni }}
+       ecmp: 8
+    bgp-vpn:
+     bgp-instance:
+     - id: 1
+
+- path: network-instance[name=overlay-router-l3-{{vni}}]
+  val:
+   type: ip-vrf
+   admin-state: enable
+{% if evpn.use_symmetric_irb|default(True) %}
+   vxlan-interface:
+   - name: vxlan0.{{vni+1}}
+   protocols:
+    bgp-evpn:
+     bgp-instance:
+     - id: 1
+       admin-state: enable
+       vxlan-interface: vxlan0.{{vni}}
+       evi: {{ vni }}
+       ecmp: 8
+    bgp-vpn:
+     bgp-instance:
+     - id: 1
+{% endif %}
+{% endfor %}

@@ -33,7 +33,7 @@ nodes:
   leaf1a:
     module: [ bgp, evpn, vxlan ]
     bgp.underlay_as: 65001
-    config: [ srl-evpn-mac-vrf.j2 ]
+    config: [ srl-evpn-l3-anycast-gw.j2 ]
   leaf1b:
     module: [ bgp, evpn, vxlan ]
     bgp.underlay_as: 65002

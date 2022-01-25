@@ -1,4 +1,6 @@
-module: [ bgp, evpn ] # iBGP for EVPN overlay, eBGP as IGP
+module: [ bgp ] # iBGP for EVPN overlay, eBGP as IGP
+
+plugin: [ ebgp-local_as ]
 
 provider: clab
 
@@ -6,27 +8,18 @@ defaults.device: srlinux
 
 defaults.frr.image.clab: frrouting/frr:v8.1.0
 
-evpn.as: 65000 # Primary AS: overlay (for auto-RD/RT to work correctly)
-
 bgp:
+  advertise_loopback: all
+  as: 65000 # iBGP AS
   as_list:
-    65000: # EVPN overlay
+    65000: # EVPN overlay with Route Reflectors at spines
       members: [ leaf1a,leaf1b,leaf2a,leaf2b,spine1,spine2,h1,h2 ]
       rr: [ spine1,spine2 ]
 
-    # eBGP underlay
-    65001:
-      members: [ leaf1a ]
-    65002:
-      members: [ leaf1b ]
-    65003:
-      members: [ leaf2a ]
-    65004:
-      members: [ leaf2b ]
-    65005:
-      members: [ spine1,spine2 ]
-    65100:
-      members: [ isp ]
+    # eBGP underlay is created using bgp.underlay_as attributes below
+
+evpn:
+  use_ebgp: False
 
 groups:
   fabric:
@@ -38,31 +31,45 @@ groups:
 
 nodes:
   leaf1a:
-    module: [ bgp, evpn ] # TODO vxlan
+    module: [ bgp, evpn, vxlan ]
+    bgp.underlay_as: 65001
+    config: [ srl-evpn-mac-vrf.j2 ]
   leaf1b:
-    module: [ bgp ] # TODO evpn, vxlan
+    module: [ bgp, evpn, vxlan ]
+    bgp.underlay_as: 65002
   leaf2a:
     module: [ bgp ] # TODO evpn, vxlan
+    bgp.underlay_as: 65003
   leaf2b:
     module: [ bgp ] # TODO evpn, vxlan
+    bgp.underlay_as: 65004
 
   spine1:
     device: sros
     module: [ bgp, evpn ]
+    bgp.underlay_as: 65010 # Cannot be 65000, AS path will block routes
   spine2:
     device: sros
+    module: [ bgp ]
+    bgp.underlay_as: 65010
 
   isp:
     bgp.as: 65100
+    module: [ bgp ]
 
   h1:
     device: frr
-    module: [ bgp, evpn ] # TODO vxlan
+    module: [ bgp, evpn, vxlan ]
+    bgp.underlay_as: 65099
   h2:
     device: frr
-    module: [ bgp ]
+    module: [ bgp, evpn, vxlan ]
+    bgp.underlay_as: 65099
 
 links:
+
+- spine1-spine2 # See https://blog.ipspace.net/2018/06/avoid-summarization-in-leaf-and-spine.html
+
 - leaf1a-spine1
 - leaf1a-spine2
 - leaf1b-spine1

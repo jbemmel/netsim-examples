@@ -8,3 +8,4 @@
 
 # References
 * [Scaleway (2016)](https://www.enog.org/wp-content/uploads/presentations/enog-16/18-Scaleway-P14-fabric-ENOG16.pdf)
+* [SR Linux EVPN-VXLAN guide 21.11](https://documentation.nokia.com/cgi-bin/dbaccessfilename.cgi/3HE17913AAAA01_V1_SR%20Linux%20R21.11%20EVPN-VXLAN%20User%20Guide.pdf)

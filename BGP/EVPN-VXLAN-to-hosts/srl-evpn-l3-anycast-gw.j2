@@ -3,12 +3,13 @@
  with anycast gateway on SR Linux
 
  The configuration differs depending on the evpn.use_symmetric_irb flag:
- * Symmetric ( i.e. both originating and terminating VTEP perform route lookup )
- * Asymmetric ( i.e. only originating VTEP performs route lookup )
+ * Symmetric ( i.e. originating VTEP performs route lookup and uses L3 VNI )
+ * Asymmetric ( i.e. only use L2 VNIs, originating VTEP needs to know final MAC )
 
 #}
 updates:
 {% for vni in vxlan.vnis %}
+# index range is 0..99999999
 - path: tunnel-interface[name=vxlan0]/vxlan-interface[index={{vni}}]
   val:
    type: bridged # L2 VNI
@@ -17,7 +18,7 @@ updates:
    egress:
     source-ip: use-system-ipv4-address
 
-{% if evpn.use_symmetric_irb|default(True) %}
+{% if evpn.use_symmetric_irb|default(False) %}
 - path: tunnel-interface[name=vxlan0]/vxlan-interface[index={{vni+1}}]
   val:
    type: routed # L3 VNI
@@ -27,10 +28,25 @@ updates:
     source-ip: use-system-ipv4-address
 {% endif %}
 
+- path: interface[name=irb0]
+  val:
+   admin-state: enable
+   subinterface:
+   - index: {{ vni }} # Range: 0..9999
+     ipv4:
+      address:
+      - ip-prefix: 10.{{vni}}.0.{{id+1}}/24
+        primary: [null]
+      - ip-prefix: 10.{{vni}}.0.1/24
+        anycast-gw: True
+     anycast-gw: { }
+
 - path: network-instance[name=overlay-router-l2-{{vni}}]
   val:
    type: mac-vrf
    admin-state: enable
+   interface:
+   - name: irb0.{{ vni }}
    vxlan-interface:
    - name: vxlan0.{{vni}}
    protocols:
@@ -49,7 +65,9 @@ updates:
   val:
    type: ip-vrf
    admin-state: enable
-{% if evpn.use_symmetric_irb|default(True) %}
+   interface:
+   - name: irb0.{{ vni }}
+{% if evpn.use_symmetric_irb|default(False) %}
    vxlan-interface:
    - name: vxlan0.{{vni+1}}
    protocols:
@@ -57,8 +75,8 @@ updates:
      bgp-instance:
      - id: 1
        admin-state: enable
-       vxlan-interface: vxlan0.{{vni}}
-       evi: {{ vni }}
+       vxlan-interface: vxlan0.{{vni+1}}
+       evi: {{ vni+1 }}
        ecmp: 8
     bgp-vpn:
      bgp-instance:

@@ -19,7 +19,7 @@ bgp:
     # eBGP underlay is created using bgp.underlay_as attributes below
 
 evpn:
-  use_ebgp: False
+  use_ibgp: True
 
 groups:
   fabric:

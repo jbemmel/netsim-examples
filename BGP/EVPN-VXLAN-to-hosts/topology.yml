@@ -1,12 +1,14 @@
-module: [ bgp ] # iBGP for EVPN overlay, eBGP as IGP
+module: [ bgp, evpn ] # iBGP for EVPN overlay, eBGP as IGP
 
 plugin: [ ebgp-local_as ]
 
 provider: clab
 
-defaults.device: srlinux
-
-defaults.frr.image.clab: frrouting/frr:v8.1.0
+defaults:
+ device: srlinux
+ frr.image.clab: frrouting/frr:v8.1.0
+ evpn.extra_attributes.global: [ vxlan_vnis, use_symmetric_irb, host_route_mobility ]
+ # evpn.extra_attributes.node: [ vxlan_vnis ]
 
 bgp:
   advertise_loopback: all
@@ -20,6 +22,9 @@ bgp:
 
 evpn:
   use_ibgp: True
+  use_symmetric_irb: False
+  host_route_mobility: False
+  vxlan_vnis: [ 100, 200 ]
 
 groups:
   fabric:
@@ -31,40 +36,37 @@ groups:
 
 nodes:
   leaf1a:
-    module: [ bgp, evpn, vxlan ]
     bgp.underlay_as: 65001
     config: [ srl-evpn-l3-anycast-gw.j2 ]
   leaf1b:
-    module: [ bgp, evpn, vxlan ]
     bgp.underlay_as: 65002
+    config: [ srl-evpn-l3-anycast-gw.j2 ]
   leaf2a:
-    module: [ bgp ] # TODO evpn, vxlan
     bgp.underlay_as: 65003
+    config: [ srl-evpn-l3-anycast-gw.j2 ]
   leaf2b:
-    module: [ bgp ] # TODO evpn, vxlan
     bgp.underlay_as: 65004
+    config: [ srl-evpn-l3-anycast-gw.j2 ]
 
   spine1:
     device: sros
-    module: [ bgp, evpn ]
     bgp.underlay_as: 65010 # Cannot be 65000, AS path will block routes
   spine2:
     device: sros
-    module: [ bgp ]
     bgp.underlay_as: 65010
 
   isp:
     bgp.as: 65100
-    module: [ bgp ]
+    module: [ bgp ] # No EVPN here, just eBGP
 
   h1:
     device: frr
-    module: [ bgp, evpn, vxlan ]
     bgp.underlay_as: 65099
+    config: [ frr-vxlan-vnis.j2 ]
   h2:
     device: frr
-    module: [ bgp, evpn, vxlan ]
     bgp.underlay_as: 65099
+    config: [ frr-vxlan-vnis.j2 ]
 
 links:
 
@@ -87,9 +89,15 @@ links:
   isp:
   role: external
 
+- isp:
+  type: loopback # New type
+  prefix:
+   ipv4: 8.8.8.8/32
+
 # Host dual connected, ECMP VXLAN (routed)
 - h1:
   leaf1a:
+    bgp.advertise: default
 - h1:
   leaf1b:
 - h2:

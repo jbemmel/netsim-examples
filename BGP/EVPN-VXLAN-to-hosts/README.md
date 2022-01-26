@@ -16,6 +16,42 @@ netlab up -v -s nodes.spine2.bgp.underlay_as=65011
 ```
 This changes the BGP peering session between the spines from iBGP to eBGP
 
+Interestingly, this causes the leaves to now receive a default route:
+```
+Different AS:
+A:leaf1a# show network-instance default route-table ipv4-unicast summary                                                                                                                                           
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+IPv4 unicast route table of network instance default
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
++-------------------------------------+-------+------------+----------------------+----------------------+----------+---------+-----------------------+-----------------------+
+|               Prefix                |  ID   | Route Type |     Route Owner      |     Active/Fib-      |  Metric  |  Pref   |    Next-hop (Type)    |  Next-hop Interface   |
+|                                     |       |            |                      |     status(slot)     |          |         |                       |                       |
++=====================================+=======+============+======================+======================+==========+=========+=======================+=======================+
+| 0.0.0.0/0                           | 0     | bgp        | bgp_mgr              | True/success         | 0        | 170     | 10.1.0.45 (indirect)  | None                  |
+...
+
+A:leaf1a# show network-instance default protocols bgp routes ipv4 prefix 0.0.0.0/0                                                                                                                                 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Show report for the BGP routes to network "0.0.0.0/0" network-instance  "default"
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Network: 0.0.0.0/0
+Received Paths: 2
+  Path 1: <Valid,>
+    Route source    : neighbor 0.0.0.0
+    Route Preference: MED is -, LocalPref is 100
+    BGP next-hop    : 0.0.0.0
+    Path            :  ?
+    Communities     : None
+  Path 2: <Best,Valid,Used,>
+    Route source    : neighbor 10.1.0.45
+    Route Preference: MED is -, LocalPref is 100
+    BGP next-hop    : 10.1.0.45
+    Path            :  ? [65099, 65002]
+    Communities     : None
+Path 2 was advertised to: 
+[ 10.1.0.45 ]
+```
+
 
 # References
 * [Scaleway (2016)](https://www.enog.org/wp-content/uploads/presentations/enog-16/18-Scaleway-P14-fabric-ENOG16.pdf)

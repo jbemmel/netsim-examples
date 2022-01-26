@@ -30,7 +30,7 @@ IPv4 unicast route table of network instance default
 | 0.0.0.0/0                           | 0     | bgp        | bgp_mgr              | True/success         | 0        | 170     | 10.1.0.45 (indirect)  | None                  |
 ...
 
-A:leaf1a# show network-instance default protocols bgp routes ipv4 prefix 0.0.0.0/0                                                                                                                                 
+A:leaf1a# show network-instance default protocols bgp routes ipv4 prefix 0.0.0.0/0                                                                                             
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Show report for the BGP routes to network "0.0.0.0/0" network-instance  "default"
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

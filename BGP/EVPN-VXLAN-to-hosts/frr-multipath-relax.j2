@@ -1,0 +1,3 @@
+router bgp {{ bgp.as }}
+ ! Consider AS paths of same length but with different AS as ECMP candidates
+ bgp bestpath as-path multipath-relax

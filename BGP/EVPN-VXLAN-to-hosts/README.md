@@ -16,7 +16,7 @@ netlab up -v -s nodes.spine2.bgp.underlay_as=65011
 ```
 This changes the BGP peering session between the spines from iBGP to eBGP
 
-Interestingly, this causes the leaves to now receive a default route:
+Interestingly, this causes the leaves to now receive a default route, via the Linux host:
 ```
 Different AS:
 A:leaf1a# show network-instance default route-table ipv4-unicast summary                                                                                                                                           
@@ -51,7 +51,7 @@ Received Paths: 2
 Path 2 was advertised to: 
 [ 10.1.0.45 ]
 ```
-
+Obviously this is undesirable, and it could be prevented in a number of different ways. The main point is that a virtual setup like this one allows designers to verify the topology, and identify any gotchas like this.
 
 # References
 * [Scaleway (2016)](https://www.enog.org/wp-content/uploads/presentations/enog-16/18-Scaleway-P14-fabric-ENOG16.pdf)

@@ -7,9 +7,9 @@
 * Double iBGP EVPN session from loopback towards Route Reflectors (spines, SR OS SR-1)
 
 ## Prerequisites
-* Netsim-Tools [dev branch](https://github.com/ipspace/netsim-tools/tree/dev)
-* [PR to add EVPN module](https://github.com/ipspace/netsim-tools/pull/188)
-* [PR with some BGP enhancements](https://github.com/ipspace/netsim-tools/pull/187)
+* Custom Netsim-Tools branch: ```git clone https://github.com/jbemmel/netsim-tools.git --branch custom-dev```
+* Nokia gRPC plugin: ```ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/```
+* + dependencies: ```python3 -m pip install grpcio protobuf```
 
 To deploy (assuming you have ```source netsim-tools/setup.sh```)
 ```

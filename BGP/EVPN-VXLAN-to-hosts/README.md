@@ -126,19 +126,18 @@ With anycast gw:
 ```
 Every server would pick one of the two leaf links (unless bonded LAG links were used)
 
-## Identical IP configuration towards each server
+## Identical IP configuration towards servers (per leaf pair)
 Instead of unique link IP pairs, both switch pairs could reuse the same sequence of IPs
 
 # Evaluating design alternatives
 Given this reference topology, we can evaluate various design options:
 
 ## Unique AS numbers for spines
-Some reference designs use a single AS for all spines, to get automatic route filtering based on AS path. To see what changes when we would use a unique AS for each spine:
+Some reference designs use a single AS for all spines, to get automatic route filtering based on AS path. To see what changes if we were to use a unique AS for each spine:
 ```
 netlab up -v -s nodes.spine2.bgp.underlay_as=65011
 ```
-This changes the BGP peering session between the spines from iBGP(EVPN) to eBGP(IPv4). Some changes would be required to make this a "fair" comparison, but the point remains
-that various design options can be explored through relatively minor tweaks.
+This changes the BGP peering session between the spines from iBGP(EVPN) to eBGP(IPv4). Some script changes would be required to make this a "fair" comparison, but the point remains that various design options can be explored through relatively minor tweaks in parameters.
 
 
 

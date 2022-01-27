@@ -9,6 +9,7 @@ delete:
 - network-instance[name=default]/interface[name={{port.ifname}}.0]
 {% endfor %}
 
+{% set irb_index=1 %}
 updates:
 
 {% for port in interfaces if 'bare_metal' in port %}
@@ -22,7 +23,8 @@ updates:
      type: bridged
      vlan:
       encap:
-       untagged: { }
+       untagged:
+        _annotate: "Matches packets with no tag or VLAN tag 0"
    - index: 1
      admin-state: enable
      type: bridged
@@ -30,26 +32,61 @@ updates:
       encap:
        single-tagged:
         vlan-id: any
+        _annotate_vlan-id: "Matches VLAN 1-4094, tag is transported inside VXLAN"
 
-- path: interface[name=irb0]/subinterface[index={{port.ifindex}}]
+- path: interface[name=irb0]/subinterface[index={{irb_index}}]
   val:
    admin-state: enable
    ipv4:
     address:
-    - ip-prefix: {{ port.ipv4 }}
+    - ip-prefix: {{ port.ipv4 }} # Shared subnet anycast gateway
+      anycast-gw: True
       primary: [null]
+   ipv6: { }
+   anycast-gw: { }
 
-- path: network-instance[name=baremetal-l2-{{port.neighbors[0].node}}]
+- path: network-instance[name=baremetal-l2-vrf]
   val:
    type: mac-vrf
+   description: "Single shared mac-vrf for all BM servers for a given tenant"
    admin-state: enable
    interface:
-   - name: irb0.{{ port.ifindex }}
+   - name: irb0.{{ irb_index }}
    - name: {{ port.ifname }}.0
+
+- path: network-instance[name=baremetal-l2-vlan-vxlan-interconnect]
+  val:
+   type: mac-vrf
+   description: "Single mac-vrf with VXLAN to interconnect all VLANs to BM servers, per tenant"
+   admin-state: enable
+   interface:
+   # - name: irb0.{{ irb_index+1 }}
+   - name: {{ port.ifname }}.1
+   vxlan-interface:
+   - name: vxlan0.{{ irb_index+1 }}
+   protocols:
+    bgp-evpn:
+     bgp-instance:
+     - id: 1
+       admin-state: enable
+       vxlan-interface: vxlan0.{{ irb_index+1 }}
+       evi: {{ irb_index+1 }}
+       ecmp: 8 # Via both spines
+    bgp-vpn:
+     bgp-instance:
+     - id: 1
+
+- path: tunnel-interface[name=vxlan0]/vxlan-interface[index={{irb_index+1}}]
+  val:
+   type: bridged # L2 VNI
+   ingress:
+    vni: {{ irb_index+1 }}
+   egress:
+    source-ip: use-system-ipv4-address
 
 - path: network-instance[name=default]
   val:
    interface:
-   - name: irb0.{{ port.ifindex }}
+   - name: irb0.{{ irb_index }}
 
 {% endfor %}

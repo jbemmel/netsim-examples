@@ -7,7 +7,7 @@
 * Double iBGP EVPN session from loopback towards Route Reflectors (spines, SR OS SR-1)
 
 ## Prerequisites
-* Netim-Tools [dev branch](https://github.com/ipspace/netsim-tools/tree/dev)
+* Netsim-Tools [dev branch](https://github.com/ipspace/netsim-tools/tree/dev)
 * [PR to add EVPN module](https://github.com/ipspace/netsim-tools/pull/188)
 * [PR with some BGP enhancements](https://github.com/ipspace/netsim-tools/pull/187)
 

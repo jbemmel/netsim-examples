@@ -9,7 +9,7 @@ router bgp {{ bgp.as }}
 {% if af in loopback and bgp.advertise_loopback %}
   no network {{ loopback[af] }}
 {%   for n in bgp.neighbors if n[af] is defined and n.type=='ebgp' %}
- neighbor {{ n[af] }} route-map export_ebgp out
+  neighbor {{ n[af] }} route-map export_ebgp out
 {% endfor %}
 {% endif %}
  !

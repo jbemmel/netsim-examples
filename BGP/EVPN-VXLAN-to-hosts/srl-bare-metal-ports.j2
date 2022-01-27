@@ -1,0 +1,50 @@
+{#
+ These gNMI YANG updates provision bare metal ports on SR Linux, with an
+ untagged routed IRB interface (for PXEboot via DHCP) and a second subinterface
+ for any VLANs (to be put into a VXLAN overlay)
+#}
+delete:
+{% for port in interfaces if 'bare_metal' in port %}
+- interface[name={{ port.ifname }}]/subinterface[index=0]/ipv4
+- network-instance[name=default]/interface[name={{port.ifname}}.0]
+{% endfor %}
+
+updates:
+
+{% for port in interfaces if 'bare_metal' in port %}
+- path: interface[name={{ port.ifname }}]
+  val:
+   admin-state: enable
+   vlan-tagging: True
+   subinterface:
+   - index: 0
+     admin-state: enable
+     type: bridged
+     vlan:
+      encap:
+       untagged: { }
+   - index: 1
+     admin-state: enable
+     type: bridged
+     vlan:
+      encap:
+       single-tagged:
+        vlan-id: any
+
+- path: interface[name=irb0]/subinterface[index={{port.ifindex}}]
+  val:
+   admin-state: enable
+   ipv4:
+    address:
+    - ip-prefix: {{ port.ipv4 }}
+      primary: [null]
+
+- path: network-instance[name=baremetal-l2-{{port.neighbors[0].node}}]
+  val:
+   type: mac-vrf
+   admin-state: enable
+   interface:
+   - name: irb0.{{ port.ifindex }}
+   - name: {{ port.ifname }}.0
+
+{% endfor %}

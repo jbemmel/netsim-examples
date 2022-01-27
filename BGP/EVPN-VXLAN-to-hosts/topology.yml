@@ -7,6 +7,7 @@ provider: clab
 defaults:
  device: srlinux
  frr.image.clab: frrouting/frr:v8.1.0
+ extra_attributes.link: [ bare_metal ]
  evpn.extra_attributes.global: [ vxlan_vnis, use_symmetric_irb, host_route_mobility ]
  # evpn.extra_attributes.node: [ vxlan_vnis ]
 
@@ -38,7 +39,7 @@ nodes:
   leaf1a:
     bgp.underlay_as: 65001
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
-    config: [ srl-evpn-l3-anycast-gw.j2 ]
+    config: [ srl-evpn-l3-anycast-gw.j2, srl-bare-metal-ports.j2 ]
   leaf1b:
     bgp.underlay_as: 65002
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
@@ -46,7 +47,7 @@ nodes:
   leaf2a:
     bgp.underlay_as: 65003
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
-    config: [ srl-evpn-l3-anycast-gw.j2 ]
+    config: [ srl-evpn-l3-anycast-gw.j2, srl-bare-metal-ports.j2 ]
   leaf2b:
     bgp.underlay_as: 65004
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
@@ -75,6 +76,11 @@ nodes:
     bgp.underlay_as: 65099
     config: [ frr-vxlan-vnis.j2, frr-multipath-relax.j2 ]
 
+  baremetal1:
+    device: linux
+  baremetal2:
+    device: linux
+
 links:
 
 - spine1-spine2 # See https://blog.ipspace.net/2018/06/avoid-summarization-in-leaf-and-spine.html
@@ -97,11 +103,15 @@ links:
   role: external
 
 # Host dual connected, ECMP VXLAN (routed)
-- h1:
-  leaf1a:
-- h1:
-  leaf1b:
-- h2:
-  leaf2a:
-- h2:
-  leaf2b:
+- leaf1a-h1
+- leaf1b-h1
+- leaf2a-h2
+- leaf2b-h2
+
+# Bare metal servers single connected
+- leaf1a:
+  baremetal1:
+  bare_metal: True
+- leaf2a:
+  baremetal2:
+  bare_metal: True

@@ -12,6 +12,7 @@
 * Every leaf has a unique eBGP AS
 * All spines share the same eBGP AS towards leaves
   + TODO they may need a unique AS to peer amongst themselves, in case of a direct link
+* Because the Linux hosts already have 0.0.0.0/0 via management, the fabric announces 0.0.0.0/1 and 128.0.0.0/1 (longer prefix match)
 
 # Evaluating design alternatives
 Given this reference topology, we can easily evaluate various design options:

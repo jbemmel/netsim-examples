@@ -108,7 +108,7 @@ links:
 - leaf2a-h2
 - leaf2b-h2
 
-# Bare metal servers single connected
+# Bare metal servers single connected, these become 'stub' links due to Linux
 - leaf1a:
   baremetal1:
   bare_metal: True

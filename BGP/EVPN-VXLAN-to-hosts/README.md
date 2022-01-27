@@ -6,6 +6,13 @@
 * Redundant dual eBGP sessions with pair of ToRs (7220 IXR-D2s)
 * Double iBGP EVPN session from loopback towards Route Reflectors (spines, SR OS SR-1)
 
+## Underlay routing design
+* Linux hosts receive a default route from each leaf, and advertise their ipv4 loopback (eBGP)
+* All Linux hosts have the same eBGP AS; this is possible because of the default routes
+* Every leaf has a unique eBGP AS
+* All spines share the same eBGP AS towards leaves
+  + TODO they may need a unique AS to peer amongst themselves, in case of a direct link
+
 # Evaluating design alternatives
 Given this reference topology, we can easily evaluate various design options:
 

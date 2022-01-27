@@ -115,7 +115,7 @@ Current:
 With anycast gw:
 0.0.0.0/0 via next hop 10.1.0.1
 ```
-Every server would pick one of the two leaf links (unless a bonded LAG links were used)
+Every server would pick one of the two leaf links (unless bonded LAG links were used)
 
 ## Identical IP configuration towards each server
 Instead of unique link IP pairs, both switch pairs could reuse the same sequence of IPs

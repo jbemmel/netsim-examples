@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+set -e
+set -x
+#
+# Create VXLAN interface(s), TODO use 'vni' attribute in subnets
+#
+for vni in {{ evpn.vxlan_vnis|join(' ') }}; do
+    # Create VXLAN interface
+    ip link add vxlan${vni} type vxlan \
+        id ${vni} \
+        dstport 4789 \
+        local {{ loopback.ipv4|ipaddr('address') }} \
+        nolearning
+    # Create companion bridge
+    brctl addbr br${vni}
+    brctl addif br${vni} vxlan${vni}
+    brctl stp br${vni} off
+    ip link set up dev br${vni}
+    ip link set up dev vxlan${vni}
+
+    # Attach loopback interface (could assign IP)
+    ip addr add dev br${vni} 10.${vni}.0.{{id+100}}/24
+    #ip link add link lo0 name lo0.${vni} type vlan id ${vni}
+    #brctl addif br${vni} lo0.${vni}
+    #ip link set up dev lo0.${vni}
+done
+
+# Reload FRR to advertise VNIs
+if [[ -f /etc/frr/frr.conf ]]; then
+  /usr/lib/frr/frrinit.sh reload
+fi
+
+exit 0

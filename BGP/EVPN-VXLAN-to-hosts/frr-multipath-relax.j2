@@ -1,3 +1,23 @@
 router bgp {{ bgp.as }}
  ! Consider AS paths of same length but with different AS as ECMP candidates
  bgp bestpath as-path multipath-relax
+
+{# Limit eBGP export to loopback address #}
+{% for af in ['ipv4','ipv6'] %}
+ address-family {{ af }} unicast
+  redistribute connected
+{% if af in loopback and bgp.advertise_loopback %}
+  no network {{ loopback[af] }}
+{%   for n in bgp.neighbors if n[af] is defined and n.type=='ebgp' %}
+ neighbor {{ n[af] }} route-map export_ebgp out
+{% endfor %}
+{% endif %}
+ !
+{% endfor %}
+!
+
+route-map export_ebgp permit 10
+ match interface lo0
+!
+route-map export_ebgp deny 100
+!

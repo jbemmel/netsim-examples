@@ -37,32 +37,38 @@ groups:
 nodes:
   leaf1a:
     bgp.underlay_as: 65001
+    bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
     config: [ srl-evpn-l3-anycast-gw.j2 ]
   leaf1b:
     bgp.underlay_as: 65002
+    bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
     config: [ srl-evpn-l3-anycast-gw.j2 ]
   leaf2a:
     bgp.underlay_as: 65003
+    bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
     config: [ srl-evpn-l3-anycast-gw.j2 ]
   leaf2b:
     bgp.underlay_as: 65004
+    bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
     config: [ srl-evpn-l3-anycast-gw.j2 ]
 
   spine1:
     device: sros
     bgp.underlay_as: 65010 # Cannot be 65000, AS path will block routes
+    bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
   spine2:
     device: sros
     bgp.underlay_as: 65010
+    bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
 
   isp:
     bgp.as: 65100
-    bgp.originate: [ 1.1.1.1/32, 8.8.8.8/32 ]
+    bgp.originate: [ 1.1.1.1/32, 8.8.8.8/32, 0.0.0.0/1, 128.0.0.0/1 ]
     module: [ bgp ] # No EVPN here, just eBGP
 
   h1:
     device: frr
-    bgp.underlay_as: 65099
+    bgp.underlay_as: 65099 # Same AS only possible with default route to fabric
     config: [ frr-vxlan-vnis.j2, frr-multipath-relax.j2 ]
   h2:
     device: frr
@@ -93,10 +99,8 @@ links:
 # Host dual connected, ECMP VXLAN (routed)
 - h1:
   leaf1a:
-   bgp.advertise_default_route: True
 - h1:
   leaf1b:
-   bgp.advertise_default_route: True
 - h2:
   leaf2a:
 - h2:

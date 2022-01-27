@@ -7,8 +7,9 @@ provider: clab
 defaults:
  device: srlinux
  frr.image.clab: frrouting/frr:v8.1.0
- extra_attributes.link: [ bare_metal ]
+ extra_attributes.link: [ bare_metal, lag ]
  evpn.extra_attributes.global: [ vxlan_vnis, use_symmetric_irb, host_route_mobility ]
+ evpn.extra_attributes.link: [ esi, multi_homing ]
  # evpn.extra_attributes.node: [ vxlan_vnis ]
 
 bgp:
@@ -80,6 +81,8 @@ nodes:
     device: linux
   baremetal2:
     device: linux
+  baremetal3:  # Multi-homed, all-active with 4 links (to each leaf)
+    device: linux
 
 links:
 
@@ -115,3 +118,24 @@ links:
 - leaf2a:
   baremetal2:
   bare_metal: True
+
+# 4 multi-homed links
+- leaf1a:
+  baremetal3:
+  bare_metal: True
+  lag: 1
+  evpn:
+    esi: "10:00:00:00:00:00:00:00:00:00" # Used for EVPN-MH
+    multi_homing: "all-active"
+- leaf1b:
+  baremetal3:
+  bare_metal: True
+  lag: 1
+- leaf2a:
+  baremetal3:
+  bare_metal: True
+  lag: 1
+- leaf2b:
+  baremetal3:
+  bare_metal: True
+  lag: 1

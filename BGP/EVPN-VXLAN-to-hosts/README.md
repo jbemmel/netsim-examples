@@ -44,7 +44,7 @@ round-trip min/avg/max = 1.528/1.873/2.219 ms
 The resulting EVPN MAC tables can be viewed:
 ```
 --{ + running }--[  ]--                                                                                                                                                                                            
-A:leaf1a# show network-instance overlay-router-l2-100 bridge-table mac-table all                                                                                                                                   
+A:leaf1a# show network-instance overlay-router-l2-100 bridge-table mac-table all
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 Mac-table of network instance overlay-router-l2-100
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------

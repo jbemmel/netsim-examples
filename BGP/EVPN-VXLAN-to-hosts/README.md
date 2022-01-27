@@ -103,8 +103,17 @@ PING 10.100.0.3 (10.100.0.3): 56 data bytes
 round-trip min/avg/max = 5.260/5.867/6.474 ms
 ```
 
-## L3 VNIs
-The current configuration does not yet include L3 VNIs (routed VXLAN interfaces). Those would require non-default ip-vrf network instance(s)
+## Leaves: IRB interfaces in default VRF
+
+To start with, the current scripts put all IRB interfaces on the leaves in the default VRF. This should allow the Linux hosts to reach "the internet" via the underlay.
+
+## L3 anycast gateways on spines
+
+It is possible to implement the VXLAN anycast gateways on the spines ( SR-1 running SR OS )
+
+## L3 VNIs / 1 per VRF
+The current configuration does not yet include L3 VNIs (routed VXLAN interfaces). Those would require non-default ip-vrf network instance(s) (1 per L3 VNI).
+On FRR side, a VRF would have to be provisioned with the corresponding L3 VNI
 
 ## Anycast gateway in underlay (A/S links)
 It would be possible to have an anycast gateway (IRB interface) in the underlay, towards each server:

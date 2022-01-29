@@ -22,9 +22,10 @@ route-map export_ebgp permit 10
 route-map export_ebgp deny 100
 !
 
-{# Internet VRF with L3 VNI #}
+{# Internet VRF with L3 VNI; uses only EVPN type 5 routes towards gateway #}
+{# See https://docs.nvidia.com/networking-ethernet-software/cumulus-linux-41/Network-Virtualization/Ethernet-Virtual-Private-Network-EVPN/Inter-subnet-Routing/#evpn-type-5-routing-in-asymmetric-mode #}
 vrf evpn-vrf
- vni {{ evpn.internet_vni }}
+ vni {{ evpn.internet_vni }} prefix-routes-only
  exit-vrf
 !
 
@@ -39,6 +40,8 @@ router bgp {{ bgp.as }} vrf evpn-vrf
  !
 {% endfor %}
  address-family l2vpn evpn
+{# Dont advertise type-5 route with own GW IP/MAC #}
+   no advertise-pip
 {% for af in ['ipv4','ipv6'] if af in bgp %}
    advertise {{ af }} unicast
 {% endfor %}

@@ -21,3 +21,25 @@ route-map export_ebgp permit 10
 !
 route-map export_ebgp deny 100
 !
+
+{# Internet VRF with L3 VNI #}
+vrf evpn-internet-vrf
+ vni {{ evpn.internet_vni }}
+ exit-vrf
+!
+
+router bgp {{ bgp.as }} vrf evpn-internet-vrf
+ !
+{% for af in ['ipv4','ipv6'] if af in bgp %}
+ address-family {{ af }} unicast
+  redistribute connected
+  redistribute static
+ exit-address-family
+ !
+{% endfor %}
+ address-family l2vpn evpn
+{% for af in ['ipv4','ipv6'] if af in bgp %}
+   advertise {{ af }} unicast
+{% endfor %}
+ exit-address-family
+!

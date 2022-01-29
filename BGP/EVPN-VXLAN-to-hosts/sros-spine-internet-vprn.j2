@@ -1,0 +1,44 @@
+updates:
+- path: configure/service/vprn[name=internet]
+  val:
+   admin-state: enable
+   customer: "1"
+   service-id: 1
+   interface:
+   - interface-name: rvpls
+     vpls:
+     - vpls-name: internet-rvpls
+   static-routes:
+    route:
+    - ip-prefix: "8.8.8.8/32"
+      route-type: unicast
+      blackhole:
+       admin-state: enable
+
+
+{# Routed VPLS #}
+- path: configure/service/vpls[name=internet-rvpls]
+  val:
+   admin-state: enable
+   customer: "1"
+   service-id: 2
+   vxlan:
+   - vxlan-instance: 1
+     vni: {{ evpn.internet_vni }}
+   routed-vpls:
+    vxlan-ipv4-tep-ecmp: True
+   bgp:
+   - bgp-instance: 1
+     route-distinguisher: {{ bgp.router_id }}:{{ evpn.internet_vni }}
+     route-target:
+      export: target:{{ bgp.as }}:{{ evpn.internet_vni }}
+      import: target:{{ bgp.as }}:{{ evpn.internet_vni }}
+   bgp-evpn:
+    evi: {{ evpn.internet_vni }}
+    vxlan:
+    - vxlan-instance: 1
+      bgp-instance: 1
+      admin-state: enable
+    routes:
+     ip-prefix:
+      advertise: True

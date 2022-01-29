@@ -8,7 +8,7 @@ defaults:
  device: srlinux
  frr.image.clab: frrouting/frr:v8.1.0
  extra_attributes.link: [ bare_metal, lag ]
- evpn.extra_attributes.global: [ vxlan_vnis, use_symmetric_irb, host_route_mobility ]
+ evpn.extra_attributes.global: [ vxlan_vnis, use_symmetric_irb, host_route_mobility, internet_vni ]
  evpn.extra_attributes.link: [ esi, multi_homing ]
  # evpn.extra_attributes.node: [ vxlan_vnis ]
 
@@ -27,6 +27,7 @@ evpn:
   use_symmetric_irb: False
   host_route_mobility: False
   vxlan_vnis: [ 100, 200 ]
+  internet_vni: 101 # L3VNI
 
 groups:
   fabric:
@@ -58,6 +59,7 @@ nodes:
     device: sros
     bgp.underlay_as: 65010 # Cannot be 65000, AS path will block routes
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
+    config: [ sros-spine-internet-vprn.j2 ]
   spine2:
     device: sros
     bgp.underlay_as: 65010

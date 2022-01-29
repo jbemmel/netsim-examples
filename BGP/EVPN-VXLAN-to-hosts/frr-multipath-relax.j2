@@ -1,3 +1,9 @@
+route-map export_ebgp permit 10
+ match interface lo0
+!
+route-map export_ebgp deny 100
+!
+
 router bgp {{ bgp.as }}
  ! Consider AS paths of same length but with different AS as ECMP candidates
  bgp bestpath as-path multipath-relax
@@ -8,25 +14,21 @@ router bgp {{ bgp.as }}
   redistribute connected
 {% if af in loopback and bgp.advertise_loopback %}
   no network {{ loopback[af] }}
-{%   for n in bgp.neighbors if n[af] is defined and n.type=='ebgp' %}
+{% for n in bgp.neighbors if n[af] is defined and n.type=='ebgp' %}
   neighbor {{ n[af] }} route-map export_ebgp out
 {% endfor %}
 {% endif %}
  !
 {% endfor %}
-!
 
-route-map export_ebgp permit 10
- match interface lo0
-!
-route-map export_ebgp deny 100
-!
+{# May need this, see https://github.com/luis5tb/bgp-agent #}
+! ip nht resolve-via-default
 
 {# Internet VRF with L3 VNI; uses only EVPN type 5 routes towards gateway #}
 {# See https://docs.nvidia.com/networking-ethernet-software/cumulus-linux-41/Network-Virtualization/Ethernet-Virtual-Private-Network-EVPN/Inter-subnet-Routing/#evpn-type-5-routing-in-asymmetric-mode #}
 vrf evpn-vrf
  vni {{ evpn.internet_vni }} prefix-routes-only
- exit-vrf
+ ! exit-vrf
 !
 
 router bgp {{ bgp.as }} vrf evpn-vrf

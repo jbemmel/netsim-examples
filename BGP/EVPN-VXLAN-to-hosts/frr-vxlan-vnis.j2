@@ -26,6 +26,21 @@ for vni in {{ evpn.vxlan_vnis|join(' ') }}; do
     #ip link set up dev lo0.${vni}
 done
 
+# Create l3 vni
+for vni in {{ evpn.internet_vni }}; do
+ip link add br${vni} type bridge
+ip link add vxlan${vni} type vxlan id ${vni} local {{ loopback.ipv4|ipaddr('address') }} dstport 4789 nolearning
+ip link set br${vni} up
+ip link set vxlan${vni} up
+ip link set vxlan${vni} master br${vni}
+# ip link set dev br${vni} address 00:00:01:02:03:04
+
+# Create external routed vrf
+ip link add evpn-vrf type vrf table ${vni}
+ip link set evpn-vrf up
+ip link set br${vni} master evpn-vrf
+done
+
 # Reload FRR to advertise VNIs
 if [[ -f /etc/frr/frr.conf ]]; then
   /usr/lib/frr/frrinit.sh reload

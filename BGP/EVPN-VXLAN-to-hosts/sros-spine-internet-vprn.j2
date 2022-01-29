@@ -1,5 +1,5 @@
 updates:
-- path: configure/service/vprn[name=internet]
+- path: configure/service/vprn[service-name=internet]
   val:
    admin-state: enable
    customer: "1"
@@ -8,6 +8,7 @@ updates:
    - interface-name: rvpls
      vpls:
      - vpls-name: internet-rvpls
+       evpn-tunnel: { }
    static-routes:
     route:
     - ip-prefix: "8.8.8.8/32"
@@ -17,14 +18,15 @@ updates:
 
 
 {# Routed VPLS #}
-- path: configure/service/vpls[name=internet-rvpls]
+- path: configure/service/vpls[service-name=internet-rvpls]
   val:
    admin-state: enable
    customer: "1"
    service-id: 2
    vxlan:
-   - vxlan-instance: 1
-     vni: {{ evpn.internet_vni }}
+    instance:
+    - vxlan-instance: 1
+      vni: {{ evpn.internet_vni }}
    routed-vpls:
     vxlan-ipv4-tep-ecmp: True
    bgp:
@@ -39,6 +41,7 @@ updates:
     - vxlan-instance: 1
       bgp-instance: 1
       admin-state: enable
+      ecmp: 2
     routes:
      ip-prefix:
       advertise: True

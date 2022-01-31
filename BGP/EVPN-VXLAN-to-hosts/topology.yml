@@ -10,7 +10,7 @@ defaults:
  extra_attributes.link: [ bare_metal, lag ]
  evpn.extra_attributes.global: [ vxlan_vnis, use_symmetric_irb, host_route_mobility, internet_vni ]
  evpn.extra_attributes.link: [ esi, multi_homing ]
- # evpn.extra_attributes.node: [ vxlan_vnis ]
+ bgp.extra_attributes.node: [ export ]
 
 bgp:
   advertise_loopback: all
@@ -56,12 +56,16 @@ nodes:
     config: [ srl-evpn-l3-anycast-gw.j2 ]
 
   spine1:
-    device: sros
+    # device: sros
+    # TODO: This type override currently does not work yet
+    clab:
+     type: ixrd3
+    provider_type: ixrd3
     bgp.underlay_as: 65010 # Cannot be 65000, AS path will block routes
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
-    config: [ sros-spine-internet-vprn.j2 ]
+    # config: [ sros-spine-internet-vprn.j2 ]
   spine2:
-    device: sros
+    # device: sros
     bgp.underlay_as: 65010
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
 

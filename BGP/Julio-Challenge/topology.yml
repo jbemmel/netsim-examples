@@ -1,0 +1,96 @@
+module: [ bgp, evpn ] # iBGP for EVPN overlay, eBGP as IGP
+
+plugin: [ ebgp-local_as ]
+
+provider: clab
+
+defaults:
+ device: srlinux
+ devices:
+  srlinux.image.clab: ghcr.io/nokia/srlinux:21.11.1
+  # frr.image.clab: frrouting/frr:v8.1.0 # fails
+ extra_attributes.link: [ bare_metal, lag ]
+ evpn.extra_attributes:
+  global: [ vxlan_vnis, use_symmetric_irb, host_route_mobility, internet_vni ]
+  link: [ esi, multi_homing ]
+ bgp.extra_attributes:
+   global: [ export ]
+   node: [ export ]
+
+addressing:
+  loopback:
+    ipv4: 10.0.0.0/24
+  router_id:
+    ipv4: 10.0.0.0/24
+    prefix: 32
+  p2p:
+    ipv4: 10.1.0.0/16
+    prefix: 31 # Change default /30 for interface links
+
+bgp:
+  advertise_loopback: all
+  as: 123456 # iBGP AS
+  export: [ 7.7.7.7/32, 8.8.8.8/32 ]
+  as_list:
+    123456: # EVPN overlay with Route Reflectors at r2/r5
+      members: [ r1,r2,r3,r4,r5,r6 ]
+      rr: [ r2,r5]
+
+    # eBGP underlay is created using bgp.underlay_as attributes below
+
+evpn:
+  use_ibgp: True
+  use_symmetric_irb: False
+  host_route_mobility: False
+  vxlan_vnis: [ 100, 200 ]
+  internet_vni: 101 # L3VNI
+
+groups:
+  fabric:
+    members: [ r1,r2,r3,r4,r5,r6 ]
+  internet:
+    members: [ r7,r8 ]
+
+nodes:
+  r1:
+    bgp.underlay_as: 1
+  r2:
+    bgp.underlay_as: 2
+  r3:
+    bgp.underlay_as: 3
+  r4:
+    bgp.underlay_as: 4
+  r5:
+    bgp.underlay_as: 5
+  r6:
+    bgp.underlay_as: 6
+
+  r7:
+    module: [bgp]
+    bgp:
+      as: 7
+      advertise_loopback: False
+      originate: [ 7.7.7.7/32 ]
+
+  r8:
+    module: [bgp]
+    bgp:
+      as: 8
+      advertise_loopback: False
+      originate: [ 8.8.8.8/32 ]
+
+links:
+
+- r1-r2
+- r2-r3
+- r3-r4
+- r4-r5
+- r5-r6
+
+- r1:
+  r7:
+  role: external
+
+- r6:
+  r8:
+  role: external

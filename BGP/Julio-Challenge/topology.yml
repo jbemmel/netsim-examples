@@ -35,10 +35,6 @@ bgp:
 
 evpn:
   use_ibgp: True
-  use_symmetric_irb: False
-  host_route_mobility: False
-  vxlan_vnis: [ 100, 200 ]
-  internet_vni: 101 # L3VNI
 
 groups:
   fabric:
@@ -64,15 +60,15 @@ nodes:
     module: [bgp]
     bgp:
       as: 7
-      advertise_loopback: False
-      originate: [ 7.7.7.7/32 ]
+    loopback:
+      ipv4: 7.7.7.7/32
 
   r8:
     module: [bgp]
     bgp:
       as: 8
-      advertise_loopback: False
-      originate: [ 8.8.8.8/32 ]
+    loopback:
+      ipv4: 8.8.8.8/32
 
 links:
 

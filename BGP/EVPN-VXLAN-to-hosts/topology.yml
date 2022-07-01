@@ -1,13 +1,13 @@
 module: [ bgp, evpn ] # iBGP for EVPN overlay, eBGP as IGP
 
-plugin: [ ebgp-local_as ]
+# plugin: [ ebgp-local_as ]
 
 provider: clab
 
 defaults:
  device: srlinux
  devices:
-  srlinux.image.clab: ghcr.io/nokia/srlinux:21.11.2
+  srlinux.image: ghcr.io/nokia/srlinux:21.11.2
   # frr.image.clab: frrouting/frr:v8.1.0 # fails
  extra_attributes.link: [ bare_metal, lag ]
  evpn.extra_attributes:
@@ -52,19 +52,19 @@ groups:
 
 nodes:
   leaf1a:
-    bgp.underlay_as: 65001
+    bgp.local_as: 65001
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
     config: [ srl-evpn-l3-anycast-gw.j2, srl-bare-metal-ports.j2 ]
   leaf1b:
-    bgp.underlay_as: 65002
+    bgp.local_as: 65002
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
     config: [ srl-evpn-l3-anycast-gw.j2 ]
   leaf2a:
-    bgp.underlay_as: 65003
+    bgp.local_as: 65003
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
     config: [ srl-evpn-l3-anycast-gw.j2, srl-bare-metal-ports.j2 ]
   leaf2b:
-    bgp.underlay_as: 65004
+    bgp.local_as: 65004
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
     config: [ srl-evpn-l3-anycast-gw.j2 ]
 
@@ -72,7 +72,7 @@ nodes:
     # device: sros
     clab:
      type: ixrd3
-    bgp.underlay_as: 65010 # Cannot be 65000, AS path will block routes
+    bgp.local_as: 65010 # Cannot be 65000, AS path will block routes
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
     bgp.rr_cluster_id: False # Use unique cluster id
     # config: [ srl-spine-allow-own-as-ebgp.j2 ]
@@ -80,7 +80,7 @@ nodes:
     # device: sros
     clab:
      type: ixrd3
-    bgp.underlay_as: 65010
+    bgp.local_as: 65010
     bgp.export: [ 0.0.0.0/1, 128.0.0.0/1 ]
     bgp.rr_cluster_id: False # Use unique cluster id
 
@@ -92,11 +92,11 @@ nodes:
 
   h1:
     device: frr
-    bgp.underlay_as: 65099 # Same AS only possible with default route to fabric
+    bgp.local_as: 65099 # Same AS only possible with default route to fabric
     config: [ frr-vxlan-vnis.j2, frr-multipath-relax.j2 ]
   h2:
     device: frr
-    bgp.underlay_as: 65099
+    bgp.local_as: 65099
     config: [ frr-vxlan-vnis.j2, frr-multipath-relax.j2 ]
 
   baremetal1:
@@ -110,9 +110,9 @@ links:
 
 # See https://blog.ipspace.net/2018/06/avoid-summarization-in-leaf-and-spine.html
 - spine1:
-   bgp.underlay_as: 65011 # Build eBGP peering between spines
+   bgp.local_as: 65011 # Build eBGP peering between spines
   spine2:
-   bgp.underlay_as: 65012
+   bgp.local_as: 65012
   #bgp.underlay_as: # Temporary work-around for missing link_node level attributes
   # spine1: 65011
   # spine2: 65012

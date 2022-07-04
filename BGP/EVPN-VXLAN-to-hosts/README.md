@@ -13,7 +13,7 @@
 
 To deploy (assuming you have ```source netsim-tools/setup.sh```)
 ```
-git clone https://github.com/jbemmel/netsim-examples.git --branch evpn-vxlan-hosts
+git clone https://github.com/jbemmel/netsim-examples.git --branch evpn-vxlan-to-hosts
 cd netsim-examples/BGP/EVPN-VXLAN-to-hosts
 netlab up
 ```

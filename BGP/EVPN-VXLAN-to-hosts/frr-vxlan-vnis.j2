@@ -49,7 +49,8 @@ for vni in {{ evpn.vxlan_vnis|join(' ') }}; do
   fi
 done
 
-
+# Configure Zebra to use separate netns instances
+sed -i 's/-A 127.0.0.1 -s 90000000/-A 127.0.0.1 --vrfwnetns -s 90000000/g' /etc/frr/daemons
 
 # Reload FRR to advertise VNIs
 if [[ -f /etc/frr/frr.conf ]]; then

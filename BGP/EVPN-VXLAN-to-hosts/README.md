@@ -4,15 +4,17 @@
 
 * Dual connected Linux hosts (FRR)
 * Redundant dual eBGP sessions with pair of ToRs (7220 IXR-D2s)
-* Double iBGP EVPN session from loopback towards Route Reflectors (spines, SR OS SR-1)
+* Double iBGP EVPN session from loopback towards Route Reflectors (spines, 7220 IXR-D3)
 
 ## Prerequisites
-* Custom Netsim-Tools branch: ```git clone https://github.com/jbemmel/netsim-tools.git --branch custom-dev```
+* Netsim-Tools 'dev' branch: ```git clone https://github.com/ipspace/netsim-tools.git --branch dev```
 * Nokia gRPC plugin: ```ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/```
 * + dependencies: ```python3 -m pip install grpcio protobuf```
 
 To deploy (assuming you have ```source netsim-tools/setup.sh```)
 ```
+git clone https://github.com/jbemmel/netsim-examples.git --branch evpn-vxlan-to-hosts
+cd netsim-examples/BGP/EVPN-VXLAN-to-hosts
 netlab up
 ```
 

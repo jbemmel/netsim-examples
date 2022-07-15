@@ -1,4 +1,4 @@
-module: [ bgp, evpn ] # iBGP for EVPN overlay, eBGP as IGP
+module: [ bgp, evpn, vrf ] # iBGP for EVPN overlay, eBGP as IGP
 
 plugin: [ ebgp-local_as ]
 
@@ -8,7 +8,8 @@ defaults:
  device: srlinux
  devices:
   srlinux.image: ghcr.io/nokia/srlinux:22.3.2
-  # frr.image.clab: frrouting/frr:v8.1.0 # fails
+  # frr.image: frrouting/frr:v8.1.0 # fails
+  # frr.clab.binds: frr-daemons:/etc/frr/daemons
  extra_attributes.link: [ bare_metal, lag ]
  evpn.extra_attributes:
   global: [ vxlan_vnis, use_symmetric_irb, host_route_mobility, internet_vni ]
@@ -24,6 +25,14 @@ addressing:
   p2p:
     ipv4: 10.1.0.0/16
     prefix: 31 # Change default /30 for interface links
+
+vrfs:
+  default:
+    vni: 1234 # L3 VNI
+    as: 1
+  internet:
+    vni: 5678
+    as: 2
 
 bgp:
   advertise_loopback: all
@@ -92,10 +101,16 @@ nodes:
 
   h1:
     device: frr
+    clab:
+     binds:
+     - frr_daemons:/etc/frr/daemons
     bgp.underlay_as: 65099 # Same AS only possible with default route to fabric
     config: [ frr-vxlan-vnis.j2, frr-multipath-relax.j2 ]
   h2:
     device: frr
+    clab:
+     binds:
+     - frr_daemons:/etc/frr/daemons
     bgp.underlay_as: 65099
     config: [ frr-vxlan-vnis.j2, frr-multipath-relax.j2 ]
 
@@ -135,7 +150,9 @@ links:
   role: external
 
 # Host dual connected, ECMP VXLAN (routed)
-- leaf1a-h1
+- leaf1a:
+  h1:
+  # vrf: internet
 - leaf1b-h1
 - leaf2a-h2
 - leaf2b-h2

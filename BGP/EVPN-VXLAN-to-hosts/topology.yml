@@ -8,8 +8,7 @@ defaults:
  device: srlinux
  devices:
   srlinux.image: ghcr.io/nokia/srlinux:22.6.3
-  # frr.image: frrouting/frr:v8.1.0 # fails
-  # frr.clab.binds: frr-daemons:/etc/frr/daemons
+  frr.image: frrouting/frr:v8.3.1 # fails due to 'restart' -> 'reload' instead? nope
  
  #extra_attributes.link: [ bare_metal, lag ]
  #evpn.extra_attributes:
@@ -20,14 +19,35 @@ defaults:
 addressing:
   loopback:
     ipv4: 10.0.0.0/24
+    ipv6: False
   router_id:
     ipv4: 10.0.0.0/24
     prefix: 32
   p2p:
     # ipv4: 10.1.0.0/16
     # prefix: 31 # Change default /30 for interface links
+
+    # Configure all p2p links as eBGP unnumbered
     ipv6: True  # Unnumbered
     ipv4: True
+
+  # lan:
+  #  # unnumbered: True
+  #  ipv6: True  # Unnumbered
+  #  ipv4: True
+
+  external:
+    ipv4: 192.0.0.0/28
+    prefix: 31
+
+  bgp-unnumbered:
+    # unnumbered: True
+    ipv6: True  # Unnumbered
+    ipv4: True
+
+  internet: # IP prefixes assigned by the ISP
+    ipv4: 135.0.0.0/8
+    prefix: 24
 
 #vrfs:
 #  default:
@@ -42,7 +62,7 @@ bgp:
   as: 65000 # iBGP AS
   as_list:
     65000: # EVPN overlay with Route Reflectors at spines
-      members: [ leaf1a,leaf1b,leaf2a,leaf2b,spine1,spine2,h1,h2,isp ] # added isp
+      members: [ leaf1a,leaf1b,leaf2a,leaf2b,spine1,spine2,h1,h2 ]
       rr: [ spine1,spine2 ]
 
     # eBGP underlay is created using bgp.local_as attributes below
@@ -58,20 +78,24 @@ bgp:
 #  internet_vni: 101 # L3VNI
 
 vrfs:
-  internet:
+  internet: # VRF, on the spines used to export towards ISP
     evpn.transit_vni: True # Use symmetric IRB with RT5 EVPN prefixes
 
   internal:
     evpn.transit_vni: True # Use symmetric IRB with RT5 EVPN prefixes
 
+  sandbox: # Restricted vrf with dhcp server for bootstrapping computes
+
 vlans:
   internet:
     mode: route
     vrf: internet
+    pool: internet
 
   openstack-external:
     mode: irb
     vrf: internet
+    pool: internet
 
   openstack-internal:
     mode: irb
@@ -80,11 +104,20 @@ vlans:
   storage:
     mode: bridge
 
+  pxeboot: # native vlan, becomes untagged bridged port + optional irb on SR Linux
+    mode: bridge # Only connect to a DHCP server
+    vrf: sandbox
+
+  vxlan:
+    mode: route # Peer on 2 sub interfaces, not a single VLAN interface with irb
+    pool: bgp-unnumbered # Default pool = lan
+
 # By default, all global vlans are assigned a VNI
 # vxlan.vlans: [ internet, openstack-external ]
 
 groups:
   fabric:
+    # Spines act as border leaves too -> need vxlan
     members: [ leaf1a,leaf1b,leaf2a,leaf2b,spine1,spine2 ]
     device: srlinux
     module: [ bgp,evpn,vlan,vrf,vxlan ]
@@ -93,7 +126,7 @@ groups:
     members: [ isp ]
     device: srlinux
     module: [ bgp, evpn, vlan, vrf, vxlan ]  # Border leaf with EVPN
-    # module: [ bgp, vlan, vrf ]  # Border gateway with eBGP
+    module: [ bgp ]  # Pure eBGP
 
   hosts:
     members: [ h1,h2 ]
@@ -120,6 +153,7 @@ nodes:
      type: ixrd3
     bgp.local_as: 65010 # Cannot be 65000, AS path will block routes
     bgp.rr_cluster_id: False # Use unique cluster id
+    bgp.originate: [ 10.0.0.0/24 ] # For loopback routing from hosts
     # config: [ srl-spine-allow-own-as-ebgp.j2 ]
   spine2:
     # device: sros
@@ -127,17 +161,29 @@ nodes:
      type: ixrd3
     bgp.local_as: 65010
     bgp.rr_cluster_id: False # Use unique cluster id
+    bgp.originate: [ 10.0.0.0/24 ] # For loopback routing
 
   isp:
-    bgp.local_as: 65100
+    bgp.as: 65100
     # bgp.advertise_loopback: False
-    bgp.originate: [ 10.0.0.0/24 ] # For loopback routing
 
   h1:
     bgp.local_as: 65099 # Same AS only possible with default route to fabric
     # config: [ frr-vxlan-vnis.j2, frr-multipath-relax.j2 ]
+
+    # Need to pull in VRFs manually, as they are not on any interfaces
+    # vrfs:
+    #  internet:
+    #    af:
+    #      ipv4: True # Need to manually set this
+    #  internal:
+    vlans:
+      internet:
+        pool: internet # Test overriding the pool
+
   h2:
     bgp.local_as: 65099
+    module: [ bgp,vlan ] # Remove EVPN and VXLAN and VRF support
     # config: [ frr-vxlan-vnis.j2, frr-multipath-relax.j2 ]
 
   baremetal1:
@@ -165,28 +211,51 @@ links:
 - leaf2b-spine2
 
 - spine1:
+   vrf: internet # uses eBGP within VRF
   isp:
-  # role: external
+  role: external
 
 - spine2:
+   vrf: internet
   isp:
-  # role: external
+  role: external
 
 # Stub link for internet
 - isp:
     ipv4: 8.8.8.8/32
   type: stub # 'loopback'
-  vlan.access: internet
-  bgp.advertise: True
+  # vlan.access: internet ISP does not use vlan module
+  # bgp.advertise: True stub is advertised by default
 
 # Host dual connected, ECMP VXLAN (routed)
 - leaf1a:
   h1:
-  vlan.trunk: [ internet, openstack-external, openstack-internal, storage ]
+  vlan.trunk: [ vxlan, pxeboot ]
+  vlan.native: pxeboot # Note: not yet supported by frr templates
+  role: bgp-unnumbered
 
-- leaf1b-h1
-- leaf2a-h2
-- leaf2b-h2
+- leaf1b:
+  h1:
+  vlan.trunk: [ vxlan, pxeboot ]
+  vlan.native: pxeboot
+  role: bgp-unnumbered
+
+# To demonstrate 'conventional' networking using a bunch of VLANs towards hosts instead of vxlan
+- leaf2a:
+  h2:
+  vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ] # Note: no 'vxlan'
+  vlan.native: pxeboot # Note: not yet supported by frr templates
+
+# Pull in VRFs and VLANs in h1 by passing them to h2
+- h1:
+  h2:
+  vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ] # Note: no 'vxlan'
+  vlan.native: pxeboot # Note: not yet supported by frr templates
+
+# - leaf2b:
+#  h2:
+#  vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ]
+#  vlan.native: pxeboot # Note: not yet supported by frr templates
 
 # Bare metal servers single connected, these become 'stub' links due to Linux
 - leaf1a:

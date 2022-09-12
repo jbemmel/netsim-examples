@@ -171,16 +171,6 @@ nodes:
     bgp.local_as: 65099 # Same AS only possible with default route to fabric
     # config: [ frr-vxlan-vnis.j2, frr-multipath-relax.j2 ]
 
-    # Need to pull in VRFs manually, as they are not on any interfaces
-    # vrfs:
-    #  internet:
-    #    af:
-    #      ipv4: True # Need to manually set this
-    #  internal:
-    vlans:
-      internet:
-        pool: internet # Test overriding the pool
-
   h2:
     bgp.local_as: 65099
     module: [ bgp,vlan ] # Remove EVPN and VXLAN and VRF support

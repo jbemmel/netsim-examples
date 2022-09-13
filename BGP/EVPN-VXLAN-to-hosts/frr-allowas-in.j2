@@ -1,0 +1,13 @@
+
+router bgp {{ bgp.as }}
+ ! Consider AS paths of same length but with different AS as ECMP candidates
+ bgp bestpath as-path multipath-relax
+
+{# Configure eBGP allowas-in to allow all leaves to have the same AS and still receive loopback routes #}
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined and n.type=='ebgp' %}
+{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+ neighbor {{ peer }} allowas-in origin
+{%   endfor %}
+{% endfor %}
+!

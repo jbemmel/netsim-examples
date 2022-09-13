@@ -1,0 +1,19 @@
+updates:
+
+#
+# Create aggregate route for prefixes to be announced to ISP
+#
+- path: network-instance[name=internet]/aggregate-routes
+  val:
+   route:
+   - prefix: 135.0.0.0/8
+     summary-only: True
+
+#
+# Add it to export set, export only /24 and shorter
+#
+- path: routing-policy/prefix-set[name=internet_export]
+  val:
+   prefix:
+   - ip-prefix: 135.0.0.0/8
+     mask-length-range: "8..24"

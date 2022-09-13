@@ -1,8 +1,6 @@
-# module: [ bgp, evpn, vrf ] # iBGP for EVPN overlay, eBGP as IGP
-
-# plugin: [ ebgp-local_as ]
-
 provider: clab
+
+# plugin: [ ebgp.utils ] # bgp.allowas_in
 
 defaults:
  device: srlinux
@@ -10,12 +8,6 @@ defaults:
   srlinux.image: ghcr.io/nokia/srlinux:22.6.3
   frr.image: frrouting/frr:v8.3.1 # fails due to 'restart' -> 'reload' instead? nope
  
- #extra_attributes.link: [ bare_metal, lag ]
- #evpn.extra_attributes:
- # global: [ vxlan_vnis, use_symmetric_irb, host_route_mobility, internet_vni ]
- # link: [ esi, multi_homing ]
- #bgp.extra_attributes.node: [ export ]
-
 addressing:
   loopback:
     ipv4: 10.0.0.0/24
@@ -49,14 +41,6 @@ addressing:
     ipv4: 135.0.0.0/8
     prefix: 24
 
-#vrfs:
-#  default:
-#    vni: 1234 # L3 VNI
-#    as: 1
-#  internet:
-#    vni: 5678
-#    as: 2
-
 bgp:
   advertise_loopback: all
   as: 65000 # iBGP AS
@@ -70,19 +54,13 @@ bgp:
   activate: # Address families to activate
     ipv4: [ ebgp ] # Only activate ipv4 over eBGP, use iBGP for EVPN only
 
-#evpn:
-#  use_ibgp: True
-#  use_symmetric_irb: False
-#  host_route_mobility: False
-#  vxlan_vnis: [ 100, 200 ]
-#  internet_vni: 101 # L3VNI
-
 vrfs:
   internet: # VRF, on the spines used to export towards ISP
     evpn.transit_vni: True # Use symmetric IRB with RT5 EVPN prefixes
 
   internal:
     evpn.transit_vni: True # Use symmetric IRB with RT5 EVPN prefixes
+    bgp: False  # Don't construct ebgp sessions inside this vrf
 
   sandbox: # Restricted vrf with dhcp server for bootstrapping computes
 
@@ -91,6 +69,7 @@ vlans:
     mode: route
     vrf: internet
     pool: internet
+    # bgp: False # disable eBGP sessions?
 
   openstack-external:
     mode: irb
@@ -154,7 +133,7 @@ nodes:
     bgp.local_as: 65010 # Cannot be 65000, AS path will block routes
     bgp.rr_cluster_id: False # Use unique cluster id
     bgp.originate: [ 10.0.0.0/24 ] # For loopback routing from hosts
-    # config: [ srl-spine-allow-own-as-ebgp.j2 ]
+    config: [ srl-spine-internet-export.j2 ]
   spine2:
     # device: sros
     clab:
@@ -162,19 +141,24 @@ nodes:
     bgp.local_as: 65010
     bgp.rr_cluster_id: False # Use unique cluster id
     bgp.originate: [ 10.0.0.0/24 ] # For loopback routing
+    config: [ srl-spine-internet-export.j2 ]
 
   isp:
     bgp.as: 65100
     # bgp.advertise_loopback: False
 
   h1:
-    bgp.local_as: 65099 # Same AS only possible with default route to fabric
-    # config: [ frr-vxlan-vnis.j2, frr-multipath-relax.j2 ]
+    bgp.local_as: 65099   # Same AS, only possible with allowas_in
+    config: [ frr-allowas-in.j2 ]
+    vrfs:
+      internet:
+        bgp: False
 
   h2:
     bgp.local_as: 65099
     module: [ bgp,vlan ] # Remove EVPN and VXLAN and VRF support
-    # config: [ frr-vxlan-vnis.j2, frr-multipath-relax.j2 ]
+    config: [ frr-allowas-in.j2 ]
+    # role: host  # Configure as host; add IPs?
 
   baremetal1:
     device: linux
@@ -220,30 +204,35 @@ links:
 # Host dual connected, ECMP VXLAN (routed)
 - leaf1a:
   h1:
+    bgp.allowas_in: True
   vlan.trunk: [ vxlan, pxeboot ]
   vlan.native: pxeboot # Note: not yet supported by frr templates
-  role: bgp-unnumbered
+  # role: bgp-unnumbered
 
 - leaf1b:
   h1:
+    bgp.allowas_in: True
   vlan.trunk: [ vxlan, pxeboot ]
   vlan.native: pxeboot
-  role: bgp-unnumbered
+  # role: bgp-unnumbered
 
 # To demonstrate 'conventional' networking using a bunch of VLANs towards hosts instead of vxlan
 - leaf2a:
   h2:
+    bgp.allowas_in: True
   vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ] # Note: no 'vxlan'
   vlan.native: pxeboot # Note: not yet supported by frr templates
 
 # Pull in VRFs and VLANs in h1 by passing them to h2
 - h1:
   h2:
+    bgp.allowas_in: True
   vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ] # Note: no 'vxlan'
   vlan.native: pxeboot # Note: not yet supported by frr templates
 
 # - leaf2b:
 #  h2:
+#    bgp.allowas_in: True
 #  vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ]
 #  vlan.native: pxeboot # Note: not yet supported by frr templates
 

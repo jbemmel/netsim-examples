@@ -28,7 +28,7 @@ addressing:
   #  ipv6: True  # Unnumbered
   #  ipv4: True
 
-  external:
+  to-external:
     ipv4: 192.0.0.0/28
     prefix: 31
 
@@ -108,7 +108,7 @@ groups:
     module: [ bgp ]  # Pure eBGP
 
   hosts:
-    members: [ h1,h2 ]
+    members: [ h1,h2,h3 ]
     device: frr
     module: [ bgp,evpn,vlan,vrf,vxlan ]
 
@@ -132,7 +132,7 @@ nodes:
      type: ixrd3
     bgp.local_as: 65010 # Cannot be 65000, AS path will block routes
     bgp.rr_cluster_id: False # Use unique cluster id
-    bgp.originate: [ 10.0.0.0/24 ] # For loopback routing from hosts
+    # bgp.originate: [ 10.0.0.0/24 ] # For loopback routing from hosts -> breaks failover
     config: [ srl-spine-internet-export.j2 ]
   spine2:
     # device: sros
@@ -140,7 +140,6 @@ nodes:
      type: ixrd3
     bgp.local_as: 65010
     bgp.rr_cluster_id: False # Use unique cluster id
-    bgp.originate: [ 10.0.0.0/24 ] # For loopback routing
     config: [ srl-spine-internet-export.j2 ]
 
   isp:
@@ -156,16 +155,15 @@ nodes:
 
   h2:
     bgp.local_as: 65099
-    module: [ bgp,vlan ] # Remove EVPN and VXLAN and VRF support
     config: [ frr-allowas-in.j2 ]
-    # role: host  # Configure as host; add IPs?
+    vrfs:
+      internet:
+        bgp: False
 
-  baremetal1:
-    device: linux
-  baremetal2:
-    device: linux
-  baremetal3:  # Multi-homed, all-active with 4 links (to each leaf)
-    device: linux
+  h3:
+    bgp.as: 65199
+    module: [ bgp,vlan ] # Remove EVPN and VXLAN and VRF support
+    role: host
 
 links:
 
@@ -187,12 +185,12 @@ links:
 - spine1:
    vrf: internet # uses eBGP within VRF
   isp:
-  role: external
+  role: to-external
 
 - spine2:
    vrf: internet
   isp:
-  role: external
+  role: to-external
 
 # Stub link for internet
 - isp:
@@ -201,67 +199,35 @@ links:
   # vlan.access: internet ISP does not use vlan module
   # bgp.advertise: True stub is advertised by default
 
-# Host dual connected, ECMP VXLAN (routed)
+# Host h1 dual connected, ECMP VXLAN (routed)
 - leaf1a:
   h1:
-    bgp.allowas_in: True
-  vlan.trunk: [ vxlan, pxeboot ]
-  vlan.native: pxeboot # Note: not yet supported by frr templates
-  # role: bgp-unnumbered
-
-- leaf1b:
-  h1:
-    bgp.allowas_in: True
   vlan.trunk: [ vxlan, pxeboot ]
   vlan.native: pxeboot
-  # role: bgp-unnumbered
 
-# To demonstrate 'conventional' networking using a bunch of VLANs towards hosts instead of vxlan
-- leaf2a:
-  h2:
-    bgp.allowas_in: True
-  vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ] # Note: no 'vxlan'
-  vlan.native: pxeboot # Note: not yet supported by frr templates
-
-# Pull in VRFs and VLANs in h1 by passing them to h2
-- h1:
-  h2:
-    bgp.allowas_in: True
-  vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ] # Note: no 'vxlan'
-  vlan.native: pxeboot # Note: not yet supported by frr templates
-
-# - leaf2b:
-#  h2:
-#    bgp.allowas_in: True
-#  vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ]
-#  vlan.native: pxeboot # Note: not yet supported by frr templates
-
-# Bare metal servers single connected, these become 'stub' links due to Linux
-- leaf1a:
-    vlan.access: openstack-external
-  baremetal1:
-  #bare_metal: True
-- leaf2a:
-  baremetal2:
-  #bare_metal: True
-
-# 4 multi-homed links
-- leaf1a:
-  baremetal3:
-  #bare_metal: True
-  #lag: 1
-  #evpn:
-  #  esi: "10:00:00:00:00:00:00:00:00:00" # Used for EVPN-MH
-  #  multi_homing: "all-active"
 - leaf1b:
-  baremetal3:
-  #bare_metal: True
-  #lag: 1
+  h1:
+  vlan.trunk: [ vxlan, pxeboot ]
+  vlan.native: pxeboot
+
+# Host h2 dual connected, ECMP VXLAN (routed)
 - leaf2a:
-  baremetal3:
-  #bare_metal: True
-  #lag: 1
+  h2:
+  vlan.trunk: [ vxlan, pxeboot ]
+  vlan.native: pxeboot
+
 - leaf2b:
-  baremetal3:
-  #bare_metal: True
-  #lag: 1
+  h2:
+  vlan.trunk: [ vxlan, pxeboot ]
+  vlan.native: pxeboot
+
+# Pull in VRFs and VLANs in h1/h2 by passing them to h3 (or stub link?)
+- h1:
+  h3:
+  vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ] # Note: no 'vxlan'
+  vlan.native: pxeboot
+
+- h2:
+  h3:
+  vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ] # Note: no 'vxlan'
+  vlan.native: pxeboot

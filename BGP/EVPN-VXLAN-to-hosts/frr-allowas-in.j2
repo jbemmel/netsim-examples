@@ -7,7 +7,9 @@ router bgp {{ bgp.as }}
 {% for af in ['ipv4','ipv6'] %}
 {%   for n in bgp.neighbors if n[af] is defined and n.type=='ebgp' %}
 {%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
- neighbor {{ peer }} allowas-in origin
+{# Note: don't use 'origin' here - AS path is [65001, 65010, 65003, 65099], global AS 65000 and local AS 65099 #}
+ neighbor {{ peer }} allowas-in
+}
 {%   endfor %}
 {% endfor %}
 !

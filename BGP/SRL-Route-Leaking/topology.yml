@@ -1,0 +1,235 @@
+provider: clab
+
+defaults:
+ device: srlinux
+ devices:
+  srlinux.image: ghcr.io/nokia/srlinux:22.6.3
+ 
+addressing:
+  loopback:
+    ipv4: 10.0.0.0/24
+    ipv6: False
+  router_id:
+    ipv4: 10.0.0.0/24
+    prefix: 32
+  p2p:
+    # ipv4: 10.1.0.0/16
+    # prefix: 31 # Change default /30 for interface links
+
+    # Configure all p2p links as eBGP unnumbered
+    ipv6: True  # Unnumbered
+    ipv4: True
+
+  # lan:
+  #  # unnumbered: True
+  #  ipv6: True  # Unnumbered
+  #  ipv4: True
+
+  to-external:
+    ipv4: 192.0.0.0/28
+    prefix: 31
+
+  bgp-unnumbered:
+    # unnumbered: True
+    ipv6: True  # Unnumbered
+    ipv4: True
+
+  internet: # IP prefixes assigned by the ISP
+    ipv4: 135.0.0.0/8
+    prefix: 24
+
+bgp:
+  advertise_loopback: all
+  as: 65000 # iBGP AS
+  as_list:
+    65000: # EVPN overlay with Route Reflectors at spines
+      members: [ leaf1,leaf2,spine1,spine2 ]
+      rr: [ spine1,spine2 ]
+
+    # eBGP underlay is created using bgp.local_as attributes below
+
+  activate: # Address families to activate
+    ipv4: [ ebgp ] # Only activate ipv4 over eBGP, use iBGP for EVPN only
+
+vrfs:
+  global: # Global VRF
+    evpn.transit_vni: 11111 # Use symmetric IRB with RT5 EVPN prefixes
+
+  customer1:
+    evpn.transit_vni: 5111
+
+  customer2:
+    evpn.transit_vni: 5222
+
+vlans:       # All have mode:irb 
+  v2001:
+    id: 2001
+
+  v2002:
+    id: 2002
+
+  v3001:
+    id: 3001
+
+  v3002:
+    id: 3002
+
+  # Route leaking vlans
+  route-leak-to-global-customer1:
+    id: 4001
+    mode: route
+    pool: bgp-unnumbered
+
+  route-leak-to-global-customer2:
+    id: 4002
+    mode: route
+    pool: bgp-unnumbered
+
+# By default, all global vlans are assigned a VNI
+# vxlan.vlans: [ internet, openstack-external ]
+
+groups:
+  fabric:
+    members: [ leaf1,leaf2,spine1,spine2 ]  # Spines host global VRF
+    device: srlinux
+    module: [ bgp,evpn,vlan,vrf,vxlan ]
+
+  mpls:
+    members: [ mplsnet ]
+    device: srlinux
+    module: [ bgp ]  # Pure eBGP
+
+  hosts:
+    members: [ h1,h2,h3,h4 ]
+    device: linux
+    module: []
+
+nodes:
+  leaf1:
+    bgp.local_as: 65001
+
+  leaf2:
+    bgp.local_as: 65002
+
+  spine1:
+    # device: sros
+    clab:
+     type: ixrd3
+    bgp.local_as: 65010 # Cannot be 65000, AS path will block routes
+    bgp.rr_cluster_id: False # Use unique cluster id
+    # bgp.originate: [ 10.0.0.0/24 ] # For loopback routing from hosts -> breaks failover
+    # config: [ srl-spine-internet-export.j2 ]
+
+  spine2:
+    # device: sros
+    clab:
+     type: ixrd3
+    bgp.local_as: 65010
+    bgp.rr_cluster_id: False # Use unique cluster id
+    # config: [ srl-spine-internet-export.j2 ]
+
+  mplsnet: # Emulates MPLS network
+    bgp.as: 65100
+    # bgp.advertise_loopback: False
+
+  # Customer 1
+  h1:
+  h2:
+
+  # Customer 2
+  h3:
+  h4:
+
+links:
+
+# See https://blog.ipspace.net/2018/06/avoid-summarization-in-leaf-and-spine.html
+- spine1:
+   bgp.local_as: 65011 # Build eBGP peering between spines
+  spine2:
+   bgp.local_as: 65012
+
+- leaf1-spine1
+- leaf1-spine2
+- leaf2-spine1
+- leaf2-spine2
+
+- spine1:
+    vrf: global
+  mplsnet:
+  role: to-external
+
+- spine2:
+    vrf: global
+  mplsnet:
+  role: to-external
+
+#
+# Route leaking using looped interface on each leaf, eBGP peering and rfc8950 ipv6 next hops with ipv4 prefixes
+#
+- interfaces:
+  - node: leaf1
+    name: Global side
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
+    vlan.trunk:
+      route-leak-to-global-customer1:
+        vrf: global
+        # bgp.local_as: 65001 (uses node AS)
+      route-leak-to-global-customer2:
+        vrf: global
+        # bgp.local_as: 65001
+
+  - node: leaf1
+    name: Customer side
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
+    vlan.trunk:
+      route-leak-to-global-customer1:
+        vrf: customer1
+        bgp.local_as: 65111 # TODO take from vrf?
+      route-leak-to-global-customer2:
+        vrf: customer2
+        bgp.local_as: 65222
+
+# Stub link for internet
+- mplsnet:
+    ipv4: 8.8.8.8/32
+  type: stub # 'loopback'
+  # vlan.access: internet ISP does not use vlan module
+  # bgp.advertise: True stub is advertised by default
+
+# Host h1 dual connected, TODO LACP
+- leaf1:
+    vlan.access: v2001
+    vrf: customer1
+  h1:
+
+# - leaf2:
+#     vlan.access: v2001
+#   h1:
+
+- leaf1:
+    vlan.access: v2002
+    vrf: customer1
+  h2:
+
+# - leaf2:
+#     vlan.access: v2002
+#   h2:
+
+# Customer 2 hosts
+- leaf1:
+    vlan.access: v3001
+    vrf: customer2
+  h3:
+
+# - leaf2:
+#     vlan.access: v3001
+#   h3:
+
+# - leaf1:
+#     vlan.access: v3002
+#   h4:
+
+- leaf2:
+    vlan.access: v3002
+    vrf: customer2
+  h4:

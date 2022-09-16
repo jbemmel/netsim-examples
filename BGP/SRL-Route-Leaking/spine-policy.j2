@@ -23,6 +23,16 @@ updates:
      action:
       accept: { }  # Optionally, strip all communities
 
+- path: routing-policy/policy[name=default_export_evpn_new]
+  val:  
+   default-action:
+    accept: { }
+   statement:
+   - sequence-id: 10
+     match:
+      protocol: local
+     action:
+      reject: { }  # Don't advertise local link IPs or loopbacks
 
 - path: network-instance[name=global]/protocols/bgp/group[group-name=ebgp]
   val:
@@ -38,4 +48,4 @@ updates:
 
    group:
    - group-name: ibgp-ipv4
-     export-policy: global_export # Avoid re-advertising customer routes or local /31 links
+     export-policy: default_export_evpn_new  # Avoid advertising local /31 links, do need EVPN routes as RR

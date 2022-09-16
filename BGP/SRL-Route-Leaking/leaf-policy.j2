@@ -7,6 +7,12 @@ delete:
 {% endfor %}
 
 updates:
+
+{# Create no-advertise community #}
+- path: routing-policy/community-set[name=no-advertise]
+  val:
+   member: [ "no-advertise" ]
+
 {% for vname,vdata in vrfs.items() if vname!='global' %}
 - path: routing-policy/policy[name={{vname}}_export]
   val:  
@@ -27,13 +33,16 @@ updates:
       bgp:
        community-set: "C{{ c|replace(':','_') }}"
      action:
-      accept: { }
+      accept:
+       bgp:
+        communities:
+         add: no-advertise  # Don't advertise these leaked prefixes
 {%  endfor %}
 {% endfor %}
 
 {% if 'global' in vrfs %}
 
-{# Reduce local preference for routes received via selfloop #}
+{# Reduce local preference for routes received via selfloop, has no effect on route selection #}
 - path: routing-policy/policy[name=selfloop_import_reduce_localpref]
   val:
    default-action:

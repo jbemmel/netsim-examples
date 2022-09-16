@@ -34,10 +34,6 @@ addressing:
     ipv6: True  # Unnumbered
     ipv4: True
 
-  internet: # IP prefixes assigned by the ISP
-    ipv4: 135.0.0.0/8
-    prefix: 24
-
 bgp:
   advertise_loopback: all
   as: 65000 # iBGP AS
@@ -51,6 +47,11 @@ bgp:
   activate: # Address families to activate
     ipv4: [ ebgp ] # Only activate ipv4 over eBGP, use iBGP for EVPN only
 
+#
+# Illustrates 2 use cases:
+# 1. All customer routes are leaked to a global VRF
+# 2. Some customers can be allowed to leak amongst each other
+#
 vrfs:
   global: # Global VRF
     evpn.transit_vni: 11111 # Use symmetric IRB with RT5 EVPN prefixes
@@ -72,8 +73,15 @@ vrfs:
     as: 65222
     evpn.transit_vni: 5222
 
-    import: [customer2,global]
+    import: [customer2,global,customer3]  # add leaking with customer3
     export: [customer2]
+
+  customer3:
+    as: 65333
+    evpn.transit_vni: 5333
+
+    import: [customer3,global,customer2]
+    export: [customer3]
 
 vlans:       # All have mode:irb 
   v2001:
@@ -85,8 +93,8 @@ vlans:       # All have mode:irb
   v3001:
     id: 3001
 
-  v3002:
-    id: 3002
+  v3010:
+    id: 3010
 
   # Route leaking vlans
   route-leak-to-global-customer1:
@@ -96,6 +104,11 @@ vlans:       # All have mode:irb
 
   route-leak-to-global-customer2:
     id: 4002
+    mode: route
+    pool: bgp-unnumbered
+
+  route-leak-to-global-customer3:
+    id: 4003
     mode: route
     pool: bgp-unnumbered
 
@@ -207,7 +220,7 @@ links:
 #     vlan.access: v2002
 #   h2:
 
-# Customer 2 hosts
+# Customer 2 host
 - leaf1:
     vlan.access: v3001
     vrf: customer2
@@ -217,13 +230,15 @@ links:
 #     vlan.access: v3001
 #   h3:
 
+# Customer 3 host
+
 # - leaf1:
-#     vlan.access: v3002
+#     vlan.access: v3010
 #   h4:
 
 - leaf2:
-    vlan.access: v3002
-    vrf: customer2
+    vlan.access: v3010
+    vrf: customer3
   h4:
 
 #
@@ -233,7 +248,7 @@ links:
   - node: leaf1
     ifindex: 51  # 100G port
     name: Global side
-    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2,route-leak-to-global-customer3]
     vlan.trunk:
       route-leak-to-global-customer1:
         vrf: global
@@ -241,11 +256,13 @@ links:
       route-leak-to-global-customer2:
         vrf: global
         # bgp.local_as: 65001
+      route-leak-to-global-customer3:
+        vrf: global
 
   - node: leaf1
     ifindex: 52
     name: Customer side
-    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2,route-leak-to-global-customer3]
     vlan.trunk:
       route-leak-to-global-customer1:
         vrf: customer1
@@ -253,13 +270,16 @@ links:
       route-leak-to-global-customer2:
         vrf: customer2
         bgp.local_as: 65222
+      route-leak-to-global-customer3:
+        vrf: customer3
+        bgp.local_as: 65333
 
 # leaf2 looped link (could be a link template)
 - interfaces:
   - node: leaf2
     ifindex: 51  # 100G port
     name: Global side
-    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2,route-leak-to-global-customer3]
     vlan.trunk:
       route-leak-to-global-customer1:
         vrf: global
@@ -267,11 +287,13 @@ links:
       route-leak-to-global-customer2:
         vrf: global
         # bgp.local_as: 65001
+      route-leak-to-global-customer3:
+        vrf: global
 
   - node: leaf2
     ifindex: 52
     name: Customer side
-    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2,route-leak-to-global-customer3]
     vlan.trunk:
       route-leak-to-global-customer1:
         vrf: customer1
@@ -279,3 +301,6 @@ links:
       route-leak-to-global-customer2:
         vrf: customer2
         bgp.local_as: 65222
+      route-leak-to-global-customer3:
+        vrf: customer3
+        bgp.local_as: 65333

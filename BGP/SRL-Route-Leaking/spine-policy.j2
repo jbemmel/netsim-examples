@@ -10,9 +10,22 @@ updates:
       communities:
        replace: global_export
 
+{# Only advertise EVPN routes towards MPLS, not local interfaces #}
+- path: routing-policy/policy[name=global_export_new]
+  val:  
+   default-action:
+    reject: { }
+   statement:
+   - sequence-id: 10
+     match:
+      protocol: bgp-evpn
+     action:
+      accept: { }  # Optionally, strip all communities
+
+
 - path: network-instance[name=global]/protocols/bgp/group[group-name=ebgp]
   val:
-   export-policy: accept_all
+   export-policy: global_export_new
    import-policy: global_import_new
 
 - path: network-instance[name=default]/protocols/bgp

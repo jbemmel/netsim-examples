@@ -1,3 +1,8 @@
+#
+# Design variation where VXLAN is removed from the spines, and a VLAN trunk is used to carry both iBGP EVPN (for route reflection)
+# and aggregated customer traffic
+#
+
 provider: clab
 
 defaults:
@@ -97,6 +102,10 @@ vlans:       # All have mode:irb
     mode: route
     pool: bgp-unnumbered
 
+  route-reflector:
+    mode: route
+    pool: bgp-unnumbered  
+
 # By default, all global vlans are assigned a VNI
 # vxlan.vlans: [ internet, openstack-external ]
 
@@ -104,14 +113,7 @@ groups:
   spines:
     members: [ spine1,spine2 ]
     device: srlinux
-    module: [ bgp,evpn,vlan,vrf,vxlan ]
-    node_data:
-     clab:
-      type: ixrd3
-     bgp.rr_cluster_id: False # Use unique cluster id for each spine
-     vrfs:
-      global:
-        export_protocols: [ bgp ]  # Custom flag to disable exporting EVPN routes
+    module: [ bgp,evpn,vlan,vrf ] # Remove VXLAN from spines, use trunk to leaves
 
   leaves:
     members: [ leaf1,leaf2 ]
@@ -137,14 +139,28 @@ nodes:
 
   spine1:
     # device: sros
+    clab:
+     type: ixrd3
     bgp.local_as: 65010 # Cannot be 65000, AS path will block routes
+    bgp.rr_cluster_id: False # Use unique cluster id
     # bgp.originate: [ 10.0.0.0/24 ] # For loopback routing from hosts -> breaks failover
     # config: [ srl-spine-internet-export.j2 ]
 
+    vrfs:
+      global:
+        export_protocols: [ bgp ]  # Custom flag to disable exporting EVPN routes
+
   spine2:
     # device: sros
+    clab:
+     type: ixrd3
     bgp.local_as: 65010
+    bgp.rr_cluster_id: False # Use unique cluster id
     # config: [ srl-spine-internet-export.j2 ]
+
+    vrfs:
+      global:
+        export_protocols: [ bgp ]  # Custom flag to disable exporting EVPN routes
 
   mplsnet: # Emulates MPLS network
     bgp.as: 65100
@@ -166,17 +182,27 @@ links:
   spine2:
    bgp.local_as: 65012
 
-- leaf1-spine1
+- leaf1:
+  spine1:
+  vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2,route-reflector]
+  vlan.trunk:
+    route-leak-to-global-customer1:
+      vrf: global
+    route-leak-to-global-customer2:
+      vrf: global
+
 - leaf1-spine2
 - leaf2-spine1
 - leaf2-spine2
 
 - spine1:
+  #  vrf: global
   mplsnet:
   vrf: global
   role: to-external
 
 - spine2:
+  #  vrf: global
   mplsnet:
   vrf: global
   role: to-external

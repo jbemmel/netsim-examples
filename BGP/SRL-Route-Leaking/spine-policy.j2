@@ -1,8 +1,16 @@
+delete:
+- routing-policy/policy[name=global_import]
+
 updates:
-- path: routing-policy/policy[name=global_import]
+- path: routing-policy/policy[name=global_import_new]
   val:  
    default-action:
     accept:
      bgp:
       communities:
        replace: global_export
+
+- path: network-instance[name=global]/protocols/bgp/group[group-name=ebgp]
+  val:
+   export-policy: accept_all
+   import-policy: global_import_new

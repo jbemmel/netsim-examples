@@ -105,22 +105,17 @@ groups:
     members: [ spine1,spine2 ]
     device: srlinux
     module: [ bgp,evpn,vlan,vrf,vxlan ]
+    config: [ spine-policy.j2 ]
     node_data:
      clab:
       type: ixrd3
      bgp.rr_cluster_id: False # Use unique cluster id for each spine
-     vrfs:
-      global:
-        export_protocols: [ bgp ]  # Custom flag to disable exporting EVPN routes
 
   leaves:
     members: [ leaf1,leaf2 ]
     device: srlinux
     module: [ bgp,evpn,vlan,vrf,vxlan ]
-    node_data:
-     vrfs:
-      global:
-        export_protocols: [ bgp-evpn ]  # Custom flag to only export EVPN routes
+    config: [ leaf-policy.j2 ]
 
   mpls:
     members: [ mplsnet ]
@@ -143,12 +138,10 @@ nodes:
     # device: sros
     bgp.local_as: 65010 # Cannot be 65000, AS path will block routes
     # bgp.originate: [ 10.0.0.0/24 ] # For loopback routing from hosts -> breaks failover
-    # config: [ srl-spine-internet-export.j2 ]
 
   spine2:
     # device: sros
     bgp.local_as: 65010
-    # config: [ srl-spine-internet-export.j2 ]
 
   mplsnet: # Emulates MPLS network
     bgp.as: 65100

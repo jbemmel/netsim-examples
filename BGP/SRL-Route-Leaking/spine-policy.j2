@@ -49,3 +49,8 @@ updates:
    group:
    - group-name: ibgp-ipv4
      export-policy: default_export_evpn_new  # Avoid advertising local /31 links, do need EVPN routes as RR
+
+{# Keep all routes in the Global VRF FIB on spines #}
+- path: network-instance[name=default]/protocols/bgp/evpn
+  val:
+   keep-all-routes: True

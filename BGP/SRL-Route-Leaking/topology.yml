@@ -134,7 +134,8 @@ groups:
 
   mpls:
     members: [ mplsnet ]
-    device: srlinux
+    # device: srlinux
+    device: sros
     module: [ bgp, vrf ]  # Pure eBGP, need vrf to set correct communities on exported prefixes
 
   hosts:

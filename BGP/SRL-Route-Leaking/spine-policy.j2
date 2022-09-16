@@ -14,3 +14,10 @@ updates:
   val:
    export-policy: accept_all
    import-policy: global_import_new
+
+- path: network-instance[name=default]/protocols/bgp
+  val:
+   preference:
+    ebgp: 170
+    ibgp: 171
+    _annotate_ibgp: "Prefer eBGP routes received from MPLS network over EVPN iBGP routes, to avoid looping"

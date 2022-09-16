@@ -59,6 +59,8 @@ vrfs:
     import: [global,customer1,customer2]
     export: [global]
 
+    loopback: True # For testing purposes
+
   customer1:
     as: 65111
     evpn.transit_vni: 5111

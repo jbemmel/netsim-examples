@@ -10,7 +10,8 @@ updates:
       communities:
        replace: global_export
 
-{# Only advertise EVPN routes towards MPLS, not local interfaces #}
+{# Only advertise EVPN routes from customers towards MPLS, not local interfaces #}
+{# Note: not quite working, mpls still seeing /31 prefixes #}
 - path: routing-policy/policy[name=global_export_new]
   val:  
    default-action:

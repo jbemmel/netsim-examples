@@ -1,0 +1,8 @@
+updates:
+- path: routing-policy/policy[name=global_import]
+  val:  
+   default-action:
+    accept:
+     bgp:
+      communities:
+       replace: global_export

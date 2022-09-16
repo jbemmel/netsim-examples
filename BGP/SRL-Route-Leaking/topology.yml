@@ -117,6 +117,10 @@ groups:
     members: [ leaf1,leaf2 ]
     device: srlinux
     module: [ bgp,evpn,vlan,vrf,vxlan ]
+    node_data:
+     vrfs:
+      global:
+        export_protocols: [ bgp-evpn ]  # Custom flag to only export EVPN routes
 
   mpls:
     members: [ mplsnet ]
@@ -208,6 +212,8 @@ links:
       route-leak-to-global-customer2:
         vrf: customer2
         bgp.local_as: 65222
+
+# TODO leaf2 looped link
 
 # Stub link for internet
 - mplsnet:

@@ -21,3 +21,7 @@ updates:
     ebgp: 170
     ibgp: 171
     _annotate_ibgp: "Prefer eBGP routes received from MPLS network over EVPN iBGP routes, to avoid looping"
+
+   group:
+   - group-name: ibgp-ipv4
+     export-policy: global_export # Avoid re-advertising customer routes or local /31 links

@@ -2,6 +2,8 @@
 # Design variation where VXLAN is removed from the spines, and a VLAN trunk is used to carry both iBGP EVPN (for route reflection)
 # and aggregated customer traffic
 #
+# Uses IXR H2 devices (cost effective pure L3 spines) and SR OS DCGWs
+#
 
 provider: clab
 
@@ -39,16 +41,12 @@ addressing:
     ipv6: True  # Unnumbered
     ipv4: True
 
-  internet: # IP prefixes assigned by the ISP
-    ipv4: 135.0.0.0/8
-    prefix: 24
-
 bgp:
   advertise_loopback: all
   as: 65000 # iBGP AS
   as_list:
     65000: # EVPN overlay with Route Reflectors at spines
-      members: [ leaf1,leaf2,spine1,spine2 ]
+      members: [ leaf1,leaf2,spine1,spine2,dcgw ]
       rr: [ spine1,spine2 ]
 
     # eBGP underlay is created using bgp.local_as attributes below
@@ -114,11 +112,20 @@ groups:
     members: [ spine1,spine2 ]
     device: srlinux
     module: [ bgp,evpn,vlan,vrf ] # Remove VXLAN from spines, use trunk to leaves
+    node_data:
+      clab:
+        type: ixrh2
+      bgp.rr_cluster_id: False # Use unique cluster id
 
   leaves:
     members: [ leaf1,leaf2 ]
     device: srlinux
     module: [ bgp,evpn,vlan,vrf,vxlan ]
+
+  dcgws:
+    members: [ dcgw ]
+    device: sros  # Perform VRF leaking on SR OS DCGW device
+    module: [ bgp, vrf, evpn, vxlan ] # Requires VXLAN+EVPN support
 
   mpls:
     members: [ mplsnet ]
@@ -139,28 +146,17 @@ nodes:
 
   spine1:
     # device: sros
-    clab:
-     type: ixrd3
     bgp.local_as: 65010 # Cannot be 65000, AS path will block routes
-    bgp.rr_cluster_id: False # Use unique cluster id
     # bgp.originate: [ 10.0.0.0/24 ] # For loopback routing from hosts -> breaks failover
     # config: [ srl-spine-internet-export.j2 ]
 
-    vrfs:
-      global:
-        export_protocols: [ bgp ]  # Custom flag to disable exporting EVPN routes
-
   spine2:
     # device: sros
-    clab:
-     type: ixrd3
     bgp.local_as: 65010
     bgp.rr_cluster_id: False # Use unique cluster id
-    # config: [ srl-spine-internet-export.j2 ]
 
-    vrfs:
-      global:
-        export_protocols: [ bgp ]  # Custom flag to disable exporting EVPN routes
+  dcgw:
+    bgp.local_as: 65020
 
   mplsnet: # Emulates MPLS network
     bgp.as: 65100
@@ -197,15 +193,20 @@ links:
 
 - spine1:
   #  vrf: global
-  mplsnet:
+  dcgw:
   vrf: global
   role: to-external
 
 - spine2:
   #  vrf: global
-  mplsnet:
+  dcgw:
   vrf: global
   role: to-external
+
+- dcgw:
+  mplsnet:
+  vrf: global
+  role: to-external # no bgp unnumbered
 
 #
 # Route leaking using looped interface on each leaf, eBGP peering and rfc8950 ipv6 next hops with ipv4 prefixes

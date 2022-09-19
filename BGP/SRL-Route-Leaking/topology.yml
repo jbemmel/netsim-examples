@@ -123,7 +123,7 @@ groups:
     config: [ spine-policy.j2 ]
     node_data:
      clab:
-      type: ixrd3
+      type: ixrd3 # TODO ixrh3 (TD3) - pure IP spine, no VXLAN
      bgp.rr_cluster_id: False # Use unique cluster id for each spine
 
   leaves:

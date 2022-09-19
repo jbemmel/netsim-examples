@@ -2,12 +2,22 @@
 
 addressing:
   fabric:
-    # unnumbered: true # old style
+    # unnumbered: true # old style based on loopback IPs
     ipv4: true
     ipv6: true
 
+  routed-vlan:
+    ipv4: 192.0.0.0/24
+    prefix: 28 # not too small
+
 bgp:
-  as: 64999
+  advertise_loopback: all
+  as: 65000 # iBGP AS
+  as_list:
+    65000: # EVPN overlay with Route Reflectors at spine
+      members: [ leaf1,leaf2,spine,frr-bgp-s1,frr-bgp-s2 ]
+      rr: [ spine ]
+  
   # sessions: # Transport sessions to use, use defaults
   #  ipv4: [ ibgp ] # IBGP-v4 over EBGP-v6
   #  ipv6: [ ebgp ]
@@ -17,102 +27,141 @@ bgp:
 provider: clab
 
 groups:
-  hosts:
-    members: [ h1, h2, h3, h4 ]
+  frr_servers: # TODO: VRF route leaking using route maps on these hosts
+    members: [ frr-bgp-s1, frr-bgp-s2 ]
     device: frr
-    # module: [ bgp, evpn, vxlan, vlan, vrf ]
     module: [ bgp,evpn,vlan,vrf,vxlan ]
-  switches:
+    node_data:
+      vxlan.vlans: [red,blue,green]  # Disable VXLAN for the Internet VLAN on these nodes
+
+  hosts:
+    members: [ h1,h2,h3,h4 ]
+    device: linux # Some hosts need vlan support, but this sets their static default route correctly
+
+  fabric:
     members: [ spine, leaf1, leaf2 ]
     device: srlinux
     module: [ vlan,vxlan,bgp,evpn,vrf ]
 
 vrfs:
-  red:
-    evpn.transit_vni: true # enable symmetric irb
+  internet:
+    evpn.transit_vni: True # enable symmetric irb
     loopback: True
-    # af:
-    #  ipv4: True # Should be triggered by loopback interfaces being added - but isn't
-  blue:
+    # import: [internet,customer1,customer2]
+    # export: [internet]
+
+  customer1:
+    evpn.transit_vni: True
+    # import: [customer2,internet]
+    # export: [customer2]
+  
+  customer2:
+    evpn.transit_vni: True
+    # import: [customer2,internet]
+    # export: [customer2]
 
 vlans:
   red:
-    mode: irb # 'route' looses vlan.access (name of vlan) to lookup VXLAN-only
-    vrf: red
-  blue:
     mode: bridge
-    vrf: blue
-    prefix: 200.0.0.0/24
-  underlay:
+    vrf: customer1
+  blue:
+    mode: irb
+    vrf: customer2
+  green:
     mode: route
-    # vrf: default
-    pool: fabric # -> results in ipv4: 'True'
+    vrf: customer2
 
-vxlan.vlans: [ red, blue ]
+  vxlan-underlay:
+    # vni: False  # Cannot do this
+    mode: route
+    prefix:
+      ipv4: True
+      ipv6: True
 
-# plugin: [ ebgp.utils] # Enables bgp.default_originate: True
+  internet:
+    mode: irb
+    vrf: internet
+    gateway:
+      default: True
+
+  internet-transit:
+    mode: route
+    vrf: internet
+
+vxlan.vlans: [ red, blue, green, internet, internet-transit ]
 
 nodes:
   spine:
-    module: [ bgp,evpn ]
-    bgp:
-      local_as: 65000
-      rr: True
-      originate: [ 10.0.0.0/24 ] # Originate a route for all loopbacks, such that hosts know where to send
+    bgp.local_as: 65100
+    clab:
+      type: ixrd3 # 32x100G ports
+    # module: [ vxlan,bgp,evpn,vrf ] # Test: remove vlan module
   leaf1:
-    bgp.local_as: 65001
+    bgp.local_as: 65101
   leaf2:
-    bgp.local_as: 65002
+    bgp.local_as: 65102
 
+  frr-bgp-s1:
+    bgp.local_as: 65103 # Cannot be same as overlay, else AS loop
+  frr-bgp-s2:
+    bgp.local_as: 65103 # Same for all hosts -> hosts do not accept specific routes to other hosts unless allow-ownas is set
   h1:
-    bgp.local_as: 65003 # Cannot be same as overlay, else AS loop
+    module: [] # Simple host, no vlans
   h2:
-    bgp.local_as: 65003 # Same for all hosts -> hosts do not accept specific routes to other hosts, only default
+    module: []
   h3:
-    module: [bgp] # No vlans or vxlan
+    module: []
   h4:
-    module: [bgp,vlan,vrf] # vrf module not pulled in automatically by vlan.vrf
+    device: frr
+    role: host  # To get correct default route
+    module: [vlan,vrf] 
 
 links:
 - h1:
   leaf1:
-    vlan.access: underlay
-  role: fabric
-
-- h1: # Stub link to emulate a host in the overlay
-  prefix: 123.0.0.0/24
-  # vrf: red
-  vlan.access: red # In VRF red
-  type: stub # else it becomes 'lan', default type for vlans
-
-- h2:
-  leaf2:
-    vlan.access: underlay
-
-- h2: # Stub link to emulate a host in the overlay
-  # vrf: blue
-  vlan.access: blue # In VRF blue, l2 only
-  type: stub
-
-- h3:
-  leaf1:
     vlan.access: red
 
-- h4:
-  leaf2:
-  vlan.trunk: [ red, blue ] # This pulls in the vlans and vrfs
+- h2:
+  frr-bgp-s1:
+    vlan.access: red
 
-- h4: # Stub link
-  vlan.access: blue
-  type: stub
+- h3:
+  leaf2:
+    vlan.access: blue
+- h3:
+  frr-bgp-s2:
+    vlan.access: green
+
+- h4:
+  frr-bgp-s1:
+  vlan.trunk: [internet,blue,green]  # First listed vlan with IP becomes default gateway
+
+- frr-bgp-s1:
+  leaf1:
+  vlan.trunk: [vxlan-underlay,internet]
+
+- frr-bgp-s1:
+  leaf2:
+  vlan.trunk: [vxlan-underlay,internet]
+
+- frr-bgp-s2:
+  leaf1:
+  vlan.trunk: [vxlan-underlay, internet]
+
+- frr-bgp-s2:
+  leaf2:
+  vlan.trunk: [vxlan-underlay, internet]
 
 - spine:
-   ifindex: 49
+   ipv4: 8.8.8.8/32
+  type: stub
+  vlan.access: internet-transit
+
+- spine:
   leaf1:
    ifindex: 49
   role: fabric
 - spine:
-   ifindex: 50
   leaf2:
    ifindex: 49
   role: fabric

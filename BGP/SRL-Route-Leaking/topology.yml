@@ -117,7 +117,7 @@ vlans:       # All have mode:irb
     pool: bgp-unnumbered
 
 # By default, all global vlans are assigned a VNI
-# vxlan.vlans: [ internet, openstack-external ]
+vxlan.vlans: [ v2001, v2002, v3001, v3010 ]
 
 groups:
   spines:
@@ -136,6 +136,18 @@ groups:
     module: [ bgp,evpn,vlan,vrf,vxlan ]
     config: [ leaf-policy.j2 ]
 
+    # Could also only define these here, and not globally, but then consistency may be lost (ip prefixes)
+    node_data:
+     vlans:  # Pull in all customer VLANs on all leaves, even if not referenced (needed to build prefix list)
+      v2001:
+      v2002:
+      v3001:
+      v3010: # Pulling in a vlan should pull in any vrfs referenced - currently does not
+
+      global:
+        vrf: global
+        prefix: 8.8.8.8/32
+
   mpls:
     members: [ mplsnet ]
     # device: srlinux
@@ -148,11 +160,13 @@ groups:
     module: []
 
 nodes:
-  leaf1:
-    bgp.local_as: 65001
+  # Customer 1
+  h1:
+  h2:
 
-  leaf2:
-    bgp.local_as: 65002
+  # Customer 2
+  h3:
+  h4:
 
   spine1:
     # device: sros
@@ -163,49 +177,17 @@ nodes:
     # device: sros
     bgp.local_as: 65010
 
+  leaf1:
+    bgp.local_as: 65001
+
+  leaf2:
+    bgp.local_as: 65002
+
   mplsnet: # Emulates MPLS network
     bgp.as: 65100
     # bgp.advertise_loopback: False
 
-  # Customer 1
-  h1:
-  h2:
-
-  # Customer 2
-  h3:
-  h4:
-
 links:
-
-# See https://blog.ipspace.net/2018/06/avoid-summarization-in-leaf-and-spine.html
-- spine1:
-   bgp.local_as: 65011 # Build eBGP peering between spines
-  spine2:
-   bgp.local_as: 65012
-
-- leaf1-spine1
-- leaf1-spine2
-- leaf2-spine1
-- leaf2-spine2
-
-- spine1:
-  mplsnet:
-  vrf: global
-  role: to-external
-
-- spine2:
-  mplsnet:
-  vrf: global
-  role: to-external
-
-# Stub link for internet
-- mplsnet:
-    ipv4: 8.8.8.8/32
-  type: stub # 'loopback'
-  vrf: global
-  # vlan.access: MPLS does not use vlan module
-  # bgp.advertise: True stub is advertised by default
-
 # Host h1 dual connected, TODO LACP
 - leaf1:
     vlan.access: v2001
@@ -241,6 +223,46 @@ links:
 - leaf2:
     vlan.access: v3010
   h4:
+
+- leaf1:
+   ifindex: 49
+  spine1:
+
+- leaf1:
+   ifindex: 50
+  spine2:
+
+- leaf2:
+   ifindex: 49
+  spine1:
+
+- leaf2:
+   ifindex: 50
+  spine2:
+
+- spine1:
+  mplsnet:
+  vrf: global
+  role: to-external
+
+- spine2:
+  mplsnet:
+  vrf: global
+  role: to-external
+
+# See https://blog.ipspace.net/2018/06/avoid-summarization-in-leaf-and-spine.html
+- spine1:
+   bgp.local_as: 65011 # Build eBGP peering between spines
+  spine2:
+   bgp.local_as: 65012
+
+# Stub link for internet
+- mplsnet:
+    ipv4: 8.8.8.8/32
+  type: stub # 'loopback'
+  vrf: global
+  # vlan.access: MPLS does not use vlan module
+  # bgp.advertise: True stub is advertised by default
 
 #
 # Route leaking using looped interface on each leaf, eBGP peering and rfc8950 ipv6 next hops with ipv4 prefixes

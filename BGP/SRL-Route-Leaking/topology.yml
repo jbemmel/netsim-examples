@@ -86,15 +86,19 @@ vrfs:
 vlans:       # All have mode:irb 
   v2001:
     id: 2001
+    vrf: customer1
 
   v2002:
     id: 2002
+    vrf: customer1
 
   v3001:
     id: 3001
+    vrf: customer2
 
   v3010:
     id: 3010
+    vrf: customer3
 
   # Route leaking vlans
   route-leak-to-global-customer1:
@@ -205,7 +209,6 @@ links:
 # Host h1 dual connected, TODO LACP
 - leaf1:
     vlan.access: v2001
-    vrf: customer1
   h1:
 
 # - leaf2:
@@ -214,7 +217,6 @@ links:
 
 - leaf1:
     vlan.access: v2002
-    vrf: customer1
   h2:
 
 # - leaf2:
@@ -224,7 +226,6 @@ links:
 # Customer 2 host
 - leaf1:
     vlan.access: v3001
-    vrf: customer2
   h3:
 
 # - leaf2:
@@ -239,7 +240,6 @@ links:
 
 - leaf2:
     vlan.access: v3010
-    vrf: customer3
   h4:
 
 #

@@ -1,6 +1,5 @@
 #
-# Design variation where VXLAN is removed from the spines, and a VLAN trunk is used to carry both iBGP EVPN (for route reflection)
-# and aggregated customer traffic
+# Design variation where VXLAN is removed from the spines, and moved to a DCGW behind the spines
 #
 # Uses IXR H2 devices (cost effective pure L3 spines) and SR OS DCGWs
 #
@@ -20,12 +19,12 @@ addressing:
     ipv4: 10.0.0.0/24
     prefix: 32
   p2p:
-    # ipv4: 10.1.0.0/16
-    # prefix: 31 # Change default /30 for interface links
+    ipv4: 10.1.0.0/16
+    prefix: 31 # Change default /30 for interface links
 
     # Configure all p2p links as eBGP unnumbered
-    ipv6: True  # Unnumbered
-    ipv4: True
+    # ipv6: True  # Unnumbered
+    # ipv4: True
 
   # lan:
   #  # unnumbered: True
@@ -36,10 +35,10 @@ addressing:
     ipv4: 192.0.0.0/28
     prefix: 31
 
-  bgp-unnumbered:
-    # unnumbered: True
-    ipv6: True  # Unnumbered
-    ipv4: True
+  # bgp-unnumbered:
+  #   # unnumbered: True
+  #   ipv6: True  # Unnumbered
+  #   ipv4: True
 
 bgp:
   advertise_loopback: all
@@ -89,29 +88,14 @@ vlans:       # All have mode:irb
   v3002:
     id: 3002
 
-  # Route leaking vlans
-  route-leak-to-global-customer1:
-    id: 4001
-    mode: route
-    pool: bgp-unnumbered
-
-  route-leak-to-global-customer2:
-    id: 4002
-    mode: route
-    pool: bgp-unnumbered
-
-  route-reflector:
-    mode: route
-    pool: bgp-unnumbered  
-
 # By default, all global vlans are assigned a VNI
-# vxlan.vlans: [ internet, openstack-external ]
+# vxlan.vlans: [ v2001,v2002,v3001,v3002 ]
 
 groups:
   spines:
     members: [ spine1,spine2 ]
     device: srlinux
-    module: [ bgp,evpn,vlan,vrf ] # Remove VXLAN from spines, use trunk to leaves
+    module: [ bgp,evpn,vlan,vrf ] # Remove VXLAN from spines, plain IP forwarding with EVPN RR
     node_data:
       clab:
         type: ixrh2
@@ -125,7 +109,7 @@ groups:
   dcgws:
     members: [ dcgw ]
     device: sros  # Perform VRF leaking on SR OS DCGW device
-    module: [ bgp, vrf, evpn, vxlan ] # Requires VXLAN+EVPN support
+    module: [ bgp, vrf, evpn, vxlan, vlan ] # Requires VXLAN+EVPN support
 
   mpls:
     members: [ mplsnet ]
@@ -158,6 +142,12 @@ nodes:
   dcgw:
     bgp.local_as: 65020
 
+    # Instantiate all L3 VRFs
+    vrfs:
+      global:
+      customer1:
+      customer2:
+
   mplsnet: # Emulates MPLS network
     bgp.as: 65100
     # bgp.advertise_loopback: False
@@ -178,63 +168,18 @@ links:
   spine2:
    bgp.local_as: 65012
 
-- leaf1:
-  spine1:
-  vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2,route-reflector]
-  vlan.trunk:
-    route-leak-to-global-customer1:
-      vrf: global
-    route-leak-to-global-customer2:
-      vrf: global
-
+- leaf1-spine1
 - leaf1-spine2
 - leaf2-spine1
 - leaf2-spine2
 
-- spine1:
-  #  vrf: global
-  dcgw:
-  vrf: global
-  role: to-external
-
-- spine2:
-  #  vrf: global
-  dcgw:
-  vrf: global
-  role: to-external
+- spine1-dcgw
+- spine2-dcgw
 
 - dcgw:
   mplsnet:
   vrf: global
   role: to-external # no bgp unnumbered
-
-#
-# Route leaking using looped interface on each leaf, eBGP peering and rfc8950 ipv6 next hops with ipv4 prefixes
-#
-- interfaces:
-  - node: leaf1
-    ifindex: 51  # 100G port
-    name: Global side
-    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
-    vlan.trunk:
-      route-leak-to-global-customer1:
-        vrf: global
-        # bgp.local_as: 65001 (uses node AS)
-      route-leak-to-global-customer2:
-        vrf: global
-        # bgp.local_as: 65001
-
-  - node: leaf1
-    ifindex: 52
-    name: Customer side
-    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
-    vlan.trunk:
-      route-leak-to-global-customer1:
-        vrf: customer1
-        bgp.local_as: 65111 # TODO take from vrf?
-      route-leak-to-global-customer2:
-        vrf: customer2
-        bgp.local_as: 65222
 
 # Stub link for internet
 - mplsnet:

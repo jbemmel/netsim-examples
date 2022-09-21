@@ -13,6 +13,16 @@ updates:
   val:
    member: [ "no-advertise" ]
 
+{# Create per-customer prefix lists, named using their community #}
+{% for vname, vdata in vlans.items() if vdata.vrf is defined and vdata.prefix is defined %}
+{% set community = vrfs[vdata.vrf].export[0] %}
+- path: routing-policy/prefix-set[name=C{{ community|replace(':','_') }}]
+  val:
+   prefix:
+   - ip-prefix: {{ vdata.prefix.ipv4 }}
+     mask-length-range: exact
+{% endfor %}
+
 {% for vname,vdata in vrfs.items() if vname!='global' %}
 - path: routing-policy/policy[name={{vname}}_export]
   val:  
@@ -30,8 +40,9 @@ updates:
 {%  for c in vdata.import|default([]) %}
    - sequence-id: {{ 10 + loop.index }}
      match:
-      bgp:
-       community-set: "C{{ c|replace(':','_') }}"
+      prefix-set: "C{{ c|replace(':','_') }}"
+      # bgp:
+      #  community-set: "C{{ c|replace(':','_') }}"
      action:
       accept:
        bgp:

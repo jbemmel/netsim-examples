@@ -31,7 +31,7 @@ groups:
     members: [ frr-bgp-s1, frr-bgp-s2 ]
     device: frr
     module: [ vlan,vxlan,bgp,evpn,vrf ]
-    config: [ frr-allowas-in.j2 ]
+    config: [ frr-allowas-in.j2,frr-no-readvertise.j2 ]
     node_data:
       vrfs:
         internet: # Pull in internet vrf for route leaking

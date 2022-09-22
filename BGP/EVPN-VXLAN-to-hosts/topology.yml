@@ -36,7 +36,7 @@ groups:
         internet: # Pull in internet vrf for route leaking
 
   hosts:
-    members: [ h1,h2 ]
+    members: [ h1,h2,h3,h4 ]
     device: linux
     module: []
 
@@ -59,8 +59,8 @@ vrfs:
   
   customer2:
     evpn.transit_vni: True
-    # import: [customer2,internet]
-    # export: [customer2]
+    import: [customer2,internet]
+    export: [customer2]
 
 vlans:
   c1-vlan:
@@ -70,13 +70,6 @@ vlans:
   c2-vlan:
     vni: True
     vrf: customer2
-
-  vxlan-underlay:
-    vni: False
-    mode: route
-    prefix:
-      ipv4: True
-      ipv6: True
 
   internet:
     vni: True
@@ -101,10 +94,11 @@ nodes:
     bgp.local_as: 65103 # Cannot be same as overlay, else AS loop
   frr-bgp-s2:
     bgp.local_as: 65103 # Same for all hosts -> hosts do not accept specific routes to other hosts unless allow-ownas is set
+
   h1:
-    module: [] # Simple host, no vlans
   h2:
-    module: []
+  h3:
+  h4:
 
 links:
 - h1:
@@ -115,13 +109,21 @@ links:
   frr-bgp-s2:
     vlan.access: c1-vlan
 
+- h3:
+  frr-bgp-s1:
+    vlan.access: c2-vlan
+
+- h4:
+  frr-bgp-s2:
+    vlan.access: c2-vlan
+
 - frr-bgp-s1:
   leaf1:
-    vlan.access: vxlan-underlay
+  role: fabric
 
 - frr-bgp-s2:
   leaf2:
-    vlan.access: vxlan-underlay
+  role: fabric
 
 - spine:
    ipv4: 8.8.8.8/32 # Cannot do /32 on irb interface

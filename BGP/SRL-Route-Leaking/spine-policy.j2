@@ -1,8 +1,8 @@
 delete:
-- routing-policy/policy[name=global_import]
+- routing-policy/policy[name=global_ebgp_import]
 
 updates:
-- path: routing-policy/policy[name=global_import_new]
+- path: routing-policy/policy[name=global_ebgp_import_new]
   val:  
    default-action:
     accept:
@@ -12,7 +12,7 @@ updates:
 
 {# Only advertise EVPN routes from customers towards MPLS, not local interfaces #}
 {# Note: not quite working, mpls still seeing /31 prefixes #}
-- path: routing-policy/policy[name=global_export_new]
+- path: routing-policy/policy[name=global_ebgp_export_new]
   val:  
    default-action:
     reject: { }
@@ -23,7 +23,7 @@ updates:
      action:
       accept: { }  # Optionally, strip all communities
 
-- path: routing-policy/policy[name=default_export_evpn_new]
+- path: routing-policy/policy[name=default_ibgp_export_evpn_new]
   val:  
    default-action:
     accept: { }
@@ -34,23 +34,20 @@ updates:
      action:
       reject: { }  # Don't advertise local link IPs or loopbacks
 
-- path: network-instance[name=global]/protocols/bgp/group[group-name=ebgp]
+- path: network-instance[name=global]/protocols/bgp
   val:
-   export-policy: global_export_new
-   import-policy: global_import_new
-
-- path: network-instance[name=default]/protocols/bgp
-  val:
+   export-policy: global_ebgp_export_new
+   import-policy: global_ebgp_import_new
    preference:
     ebgp: 170
     ibgp: 171
-    _annotate_ibgp: "Prefer eBGP routes received from MPLS network over EVPN iBGP routes, to avoid looping"
-
-   group:
-   - group-name: ibgp-ipv4
-     export-policy: default_export_evpn_new  # Avoid advertising local /31 links, do need EVPN routes as RR
+    _annotate_ibgp: "Prefer eBGP routes received from MPLS network over EVPN iBGP routes, to avoid looping"   
 
 {# Keep all routes in the Global VRF FIB on spines #}
-- path: network-instance[name=default]/protocols/bgp/evpn
+- path: network-instance[name=default]/protocols/bgp
   val:
-   keep-all-routes: True
+   group:
+   - group-name: ibgp-ipv4
+     export-policy: default_ibgp_export_evpn_new  # Avoid advertising local /31 links, do need EVPN routes as RR
+   evpn:
+    keep-all-routes: True

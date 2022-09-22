@@ -1,11 +1,5 @@
 {% if vrfs is defined %}
 
-delete:
-{% for vname in vrfs if vname!='global' %}
-- routing-policy/policy[name={{vname}}_export]
-- routing-policy/policy[name={{vname}}_import]
-{% endfor %}
-
 updates:
 
 {# Create no-advertise community #}
@@ -23,8 +17,8 @@ updates:
      mask-length-range: exact
 {% endfor %}
 
-{% for vname,vdata in vrfs.items() if vname!='global' %}
-- path: routing-policy/policy[name={{vname}}_export]
+{% for vname,vdata in vrfs.items() if vname!='global' and 'bgp' in vdata %}
+- path: routing-policy/policy[name={{vname}}_ebgp_export_new]
   val:  
    default-action:
     accept:
@@ -32,7 +26,7 @@ updates:
       communities:
        replace: {{ vname }}_export
 
-- path: routing-policy/policy[name={{vname}}_import]
+- path: routing-policy/policy[name={{vname}}_ebgp_import_new]
   val:
    default-action: 
     reject: { }
@@ -49,6 +43,12 @@ updates:
         communities:
          add: no-advertise  # Don't advertise these leaked prefixes
 {%  endfor %}
+
+- path: network-instance[name={{vname}}]/protocols/bgp
+  val:
+   export-policy: "{{vname}}_ebgp_export_new"
+   import-policy: "{{vname}}_ebgp_import_new"
+
 {% endfor %}
 
 {% if 'global' in vrfs %}
@@ -62,13 +62,10 @@ updates:
        local-preference: 
         set: 99  # Reduced from default 100
 
-{% for n in vrfs['global'].bgp.neighbors if n.ipv4_rfc8950|default(0) %}
-- path: network-instance[name=global]/protocols/bgp/group[group-name=ebgp-unnumbered-{{n.local_as}}]
+- path: network-instance[name=global]/protocols/bgp
   val:
    export-policy: accept_all
    import-policy: selfloop_import_reduce_localpref
-{% endfor %}
-
 
 {% endif %}
 

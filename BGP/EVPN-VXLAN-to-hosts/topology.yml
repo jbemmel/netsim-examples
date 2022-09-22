@@ -1,233 +1,150 @@
-provider: clab
+## Testing topology for iBGP over eBGP with SR Linux
 
-# plugin: [ ebgp.utils ] # bgp.allowas_in
-
-defaults:
- device: srlinux
- devices:
-  srlinux.image: ghcr.io/nokia/srlinux:22.6.3
-  frr.image: frrouting/frr:v8.3.1 # fails due to 'restart' -> 'reload' instead? nope
- 
 addressing:
-  loopback:
-    ipv4: 10.0.0.0/24
-    ipv6: False
-  router_id:
-    ipv4: 10.0.0.0/24
-    prefix: 32
-  p2p:
-    # ipv4: 10.1.0.0/16
-    # prefix: 31 # Change default /30 for interface links
+  fabric:
+    # unnumbered: true # old style based on loopback IPs
+    ipv4: true
+    ipv6: true
 
-    # Configure all p2p links as eBGP unnumbered
-    ipv6: True  # Unnumbered
-    ipv4: True
-
-  # lan:
-  #  # unnumbered: True
-  #  ipv6: True  # Unnumbered
-  #  ipv4: True
-
-  to-external:
-    ipv4: 192.0.0.0/28
-    prefix: 31
-
-  bgp-unnumbered:
-    # unnumbered: True
-    ipv6: True  # Unnumbered
-    ipv4: True
-
-  internet: # IP prefixes assigned by the ISP
-    ipv4: 135.0.0.0/8
-    prefix: 24
+  routed-vlan:
+    ipv4: 192.0.0.0/24
+    prefix: 28 # not too small
 
 bgp:
   advertise_loopback: all
   as: 65000 # iBGP AS
   as_list:
-    65000: # EVPN overlay with Route Reflectors at spines
-      members: [ leaf1a,leaf1b,leaf2a,leaf2b,spine1,spine2,h1,h2 ]
-      rr: [ spine1,spine2 ]
-
-    # eBGP underlay is created using bgp.local_as attributes below
-
+    65000: # EVPN overlay with Route Reflectors at spine
+      members: [ leaf1,leaf2,spine,frr-bgp-s1,frr-bgp-s2 ]
+      rr: [ spine ]
+  
+  # sessions: # Transport sessions to use, use defaults
+  #  ipv4: [ ibgp ] # IBGP-v4 over EBGP-v6
+  #  ipv6: [ ebgp ]
   activate: # Address families to activate
     ipv4: [ ebgp ] # Only activate ipv4 over eBGP, use iBGP for EVPN only
 
-vrfs:
-  internet: # VRF, on the spines used to export towards ISP
-    evpn.transit_vni: True # Use symmetric IRB with RT5 EVPN prefixes
-
-  internal:
-    evpn.transit_vni: True # Use symmetric IRB with RT5 EVPN prefixes
-    bgp: False  # Don't construct ebgp sessions inside this vrf
-
-  sandbox: # Restricted vrf with dhcp server for bootstrapping computes
-
-vlans:
-  internet:
-    mode: route
-    vrf: internet
-    pool: internet
-    # bgp: False # disable eBGP sessions?
-
-  openstack-external:
-    mode: irb
-    vrf: internet
-    pool: internet
-
-  openstack-internal:
-    mode: irb
-    vrf: internal
-
-  storage:
-    mode: bridge
-
-  pxeboot: # native vlan, becomes untagged bridged port + optional irb on SR Linux
-    mode: bridge # Only connect to a DHCP server
-    vrf: sandbox
-
-  vxlan:
-    mode: route # Peer on 2 sub interfaces, not a single VLAN interface with irb
-    pool: bgp-unnumbered # Default pool = lan
-
-# By default, all global vlans are assigned a VNI
-# vxlan.vlans: [ internet, openstack-external ]
+provider: clab
 
 groups:
-  fabric:
-    # Spines act as border leaves too -> need vxlan
-    members: [ leaf1a,leaf1b,leaf2a,leaf2b,spine1,spine2 ]
-    device: srlinux
-    module: [ bgp,evpn,vlan,vrf,vxlan ]
-
-  internet:
-    members: [ isp ]
-    device: srlinux
-    module: [ bgp, evpn, vlan, vrf, vxlan ]  # Border leaf with EVPN
-    module: [ bgp ]  # Pure eBGP
+  frr_servers: # TODO: VRF route leaking using route maps on these hosts
+    members: [ frr-bgp-s1, frr-bgp-s2 ]
+    device: frr
+    module: [ vlan,vxlan,bgp,evpn,vrf ]
+    config: [ frr-allowas-in.j2 ]
+    node_data:
+      vrfs:
+        internet: # Pull in internet vrf for route leaking
 
   hosts:
-    members: [ h1,h2,h3 ]
-    device: frr
-    module: [ bgp,evpn,vlan,vrf,vxlan ]
+    members: [ h1,h2,h3,h4 ]
+    device: linux
+    module: []
+
+  fabric:
+    members: [ spine, leaf1, leaf2 ]
+    device: srlinux
+    module: [ vlan,vxlan,bgp,evpn,vrf ]
+
+vrfs:
+  internet:
+    evpn.transit_vni: True # enable symmetric irb
+    loopback: True
+    import: [internet,customer1,customer2]
+    export: [internet]
+
+  customer1:
+    evpn.transit_vni: True
+    import: [customer1,internet]
+    export: [customer1]
+  
+  customer2:
+    evpn.transit_vni: True
+    import: [customer2,internet]
+    export: [customer2]
+
+vlans:
+  c1-vlan:
+    vni: True
+    vrf: customer1
+
+  c2-vlan:
+    vni: True
+    vrf: customer2
+
+  internet:
+    vni: True
+    mode: route   # No irb interface -> no l2 vni possible
+    vrf: internet
+
+# vxlan.vlans: [ internet ]
 
 nodes:
-  leaf1a:
-    bgp.local_as: 65001
-    # config: [ srl-evpn-l3-anycast-gw.j2, srl-bare-metal-ports.j2 ]
-  leaf1b:
-    bgp.local_as: 65002
-    # config: [ srl-evpn-l3-anycast-gw.j2 ]
-  leaf2a:
-    bgp.local_as: 65003
-    # config: [ srl-evpn-l3-anycast-gw.j2, srl-bare-metal-ports.j2 ]
-  leaf2b:
-    bgp.local_as: 65004
-    # config: [ srl-evpn-l3-anycast-gw.j2 ]
-
-  spine1:
-    # device: sros
+  spine:
+    bgp.local_as: 65100
     clab:
-     type: ixrd3
-    bgp.local_as: 65010 # Cannot be 65000, AS path will block routes
-    bgp.rr_cluster_id: False # Use unique cluster id
-    # bgp.originate: [ 10.0.0.0/24 ] # For loopback routing from hosts -> breaks failover
-    config: [ srl-spine-internet-export.j2 ]
-  spine2:
-    # device: sros
-    clab:
-     type: ixrd3
-    bgp.local_as: 65010
-    bgp.rr_cluster_id: False # Use unique cluster id
-    config: [ srl-spine-internet-export.j2 ]
+      type: ixrd3 # 32x100G ports
+    # module: [ vxlan,bgp,evpn,vrf ] # Test: remove vlan module
 
-  isp:
-    bgp.as: 65100
-    # bgp.advertise_loopback: False
+  leaf1:
+    bgp.local_as: 65101
+  leaf2:
+    bgp.local_as: 65102
+
+  frr-bgp-s1:
+    bgp.local_as: 65103 # Cannot be same as overlay, else AS loop
+  frr-bgp-s2:
+    bgp.local_as: 65103 # Same for all hosts -> hosts do not accept specific routes to other hosts unless allow-ownas is set
 
   h1:
-    bgp.local_as: 65099   # Same AS, only possible with allowas_in
-    config: [ frr-allowas-in.j2 ]
-    vrfs:
-      internet:
-        bgp: False
-
   h2:
-    bgp.local_as: 65099
-    config: [ frr-allowas-in.j2 ]
-    vrfs:
-      internet:
-        bgp: False
-
   h3:
-    bgp.as: 65199
-    module: [ bgp,vlan ] # Remove EVPN and VXLAN and VRF support
-    role: host
+  h4:
 
 links:
-
-# See https://blog.ipspace.net/2018/06/avoid-summarization-in-leaf-and-spine.html
-- spine1:
-   bgp.local_as: 65011 # Build eBGP peering between spines
-  spine2:
-   bgp.local_as: 65012
-
-- leaf1a-spine1
-- leaf1a-spine2
-- leaf1b-spine1
-- leaf1b-spine2
-- leaf2a-spine1
-- leaf2a-spine2
-- leaf2b-spine1
-- leaf2b-spine2
-
-- spine1:
-   vrf: internet # uses eBGP within VRF
-  isp:
-  role: to-external
-
-- spine2:
-   vrf: internet
-  isp:
-  role: to-external
-
-# Stub link for internet
-- isp:
-    ipv4: 8.8.8.8/32
-  type: stub # 'loopback'
-  # vlan.access: internet ISP does not use vlan module
-  # bgp.advertise: True stub is advertised by default
-
-# Host h1 dual connected, ECMP VXLAN (routed)
-- leaf1a:
-  h1:
-  vlan.trunk: [ vxlan, pxeboot ]
-  vlan.native: pxeboot
-
-- leaf1b:
-  h1:
-  vlan.trunk: [ vxlan, pxeboot ]
-  vlan.native: pxeboot
-
-# Host h2 dual connected, ECMP VXLAN (routed)
-- leaf2a:
-  h2:
-  vlan.trunk: [ vxlan, pxeboot ]
-  vlan.native: pxeboot
-
-- leaf2b:
-  h2:
-  vlan.trunk: [ vxlan, pxeboot ]
-  vlan.native: pxeboot
-
-# Pull in VRFs and VLANs in h1/h2 by passing them to h3 (or stub link?)
 - h1:
-  h3:
-  vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ] # Note: no 'vxlan'
-  vlan.native: pxeboot
+  frr-bgp-s1:
+    vlan.access: c1-vlan
 
 - h2:
-  h3:
-  vlan.trunk: [ internet, openstack-external, openstack-internal, storage, pxeboot ] # Note: no 'vxlan'
-  vlan.native: pxeboot
+  frr-bgp-s2:
+    vlan.access: c1-vlan
+
+- h3:
+  frr-bgp-s1:
+    vlan.access: c2-vlan
+
+- h4:
+  frr-bgp-s2:
+    vlan.access: c2-vlan
+
+# ECMP across both leaves
+- frr-bgp-s1:
+  leaf1:
+  role: fabric
+
+- frr-bgp-s1:
+  leaf2:
+  role: fabric
+
+- frr-bgp-s2:
+  leaf1:
+  role: fabric
+
+- frr-bgp-s2:
+  leaf2:
+  role: fabric
+
+- spine:
+   ipv4: 8.8.8.8/32 # Cannot do /32 on irb interface
+  type: stub
+  vlan.access: internet
+
+- spine:
+  leaf1:
+   ifindex: 49
+  role: fabric
+- spine:
+  leaf2:
+   ifindex: 49
+  role: fabric

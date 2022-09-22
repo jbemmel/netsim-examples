@@ -2,7 +2,7 @@ route-map no-advertise permit 10
  set community no-advertise
 exit
 
-{% for vname,vdata in vrfs %}
+{% for vname in vrfs %}
 router bgp {{ bgp.as }} vrf {{ vname }}
 
  address-family ipv4 unicast

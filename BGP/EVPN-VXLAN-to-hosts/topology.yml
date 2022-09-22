@@ -30,13 +30,15 @@ groups:
   frr_servers: # TODO: VRF route leaking using route maps on these hosts
     members: [ frr-bgp-s1, frr-bgp-s2 ]
     device: frr
-    module: [ bgp,evpn,vlan,vrf,vxlan ]
+    module: [ vlan,vxlan,bgp,evpn,vrf ]
     node_data:
-      vxlan.vlans: [red,blue,green]  # Disable VXLAN for the Internet VLAN on these nodes
+      vrfs:
+        internet: # Pull in internet vrf for route leaking
 
   hosts:
-    members: [ h1,h2,h3,h4 ]
-    device: linux # Some hosts need vlan support, but this sets their static default route correctly
+    members: [ h1,h2 ]
+    device: linux
+    module: []
 
   fabric:
     members: [ spine, leaf1, leaf2 ]
@@ -47,13 +49,13 @@ vrfs:
   internet:
     evpn.transit_vni: True # enable symmetric irb
     loopback: True
-    # import: [internet,customer1,customer2]
-    # export: [internet]
+    import: [internet,customer1,customer2]
+    export: [internet]
 
   customer1:
     evpn.transit_vni: True
-    # import: [customer2,internet]
-    # export: [customer2]
+    import: [customer1,internet]
+    export: [customer1]
   
   customer2:
     evpn.transit_vni: True
@@ -61,34 +63,27 @@ vrfs:
     # export: [customer2]
 
 vlans:
-  red:
-    mode: bridge
+  c1-vlan:
+    vni: True
     vrf: customer1
-  blue:
-    mode: irb
-    vrf: customer2
-  green:
-    mode: route
+
+  c2-vlan:
+    vni: True
     vrf: customer2
 
   vxlan-underlay:
-    # vni: False  # Cannot do this
+    vni: False
     mode: route
     prefix:
       ipv4: True
       ipv6: True
 
   internet:
-    mode: irb
-    vrf: internet
-    gateway:
-      default: True
-
-  internet-transit:
-    mode: route
+    vni: True
+    mode: route   # No irb interface -> no l2 vni possible
     vrf: internet
 
-vxlan.vlans: [ red, blue, green, internet, internet-transit ]
+# vxlan.vlans: [ internet ]
 
 nodes:
   spine:
@@ -96,6 +91,7 @@ nodes:
     clab:
       type: ixrd3 # 32x100G ports
     # module: [ vxlan,bgp,evpn,vrf ] # Test: remove vlan module
+
   leaf1:
     bgp.local_as: 65101
   leaf2:
@@ -109,53 +105,28 @@ nodes:
     module: [] # Simple host, no vlans
   h2:
     module: []
-  h3:
-    module: []
-  h4:
-    device: frr
-    role: host  # To get correct default route
-    module: [vlan,vrf] 
 
 links:
 - h1:
-  leaf1:
-    vlan.access: red
+  frr-bgp-s1:
+    vlan.access: c1-vlan
 
 - h2:
-  frr-bgp-s1:
-    vlan.access: red
-
-- h3:
-  leaf2:
-    vlan.access: blue
-- h3:
   frr-bgp-s2:
-    vlan.access: green
-
-- h4:
-  frr-bgp-s1:
-  vlan.trunk: [internet,blue,green]  # First listed vlan with IP becomes default gateway
+    vlan.access: c1-vlan
 
 - frr-bgp-s1:
   leaf1:
-  vlan.trunk: [vxlan-underlay,internet]
-
-- frr-bgp-s1:
-  leaf2:
-  vlan.trunk: [vxlan-underlay,internet]
-
-- frr-bgp-s2:
-  leaf1:
-  vlan.trunk: [vxlan-underlay, internet]
+    vlan.access: vxlan-underlay
 
 - frr-bgp-s2:
   leaf2:
-  vlan.trunk: [vxlan-underlay, internet]
+    vlan.access: vxlan-underlay
 
 - spine:
-   ipv4: 8.8.8.8/32
+   ipv4: 8.8.8.8/32 # Cannot do /32 on irb interface
   type: stub
-  vlan.access: internet-transit
+  vlan.access: internet
 
 - spine:
   leaf1:

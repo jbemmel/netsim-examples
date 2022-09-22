@@ -1,9 +1,12 @@
 provider: clab
 
+plugin: [ topology-data ]
+
 defaults:
  device: srlinux
  devices:
   srlinux.image: ghcr.io/nokia/srlinux:22.6.3
+ topology-data: [ vlans, vrfs ]
  
 addressing:
   loopback:
@@ -116,6 +119,11 @@ vlans:       # All have mode:irb
     mode: route
     pool: bgp-unnumbered
 
+  # Global vlan only used to generate prefix list + communities
+  global:
+    vrf: global
+    prefix: 8.8.8.8/32
+
 # By default, all global vlans are assigned a VNI
 vxlan.vlans: [ v2001, v2002, v3001, v3010 ]
 
@@ -137,16 +145,16 @@ groups:
     config: [ leaf-policy.j2 ]
 
     # Could also only define these here, and not globally, but then consistency may be lost (ip prefixes)
-    node_data:
-     vlans:  # Pull in all customer VLANs on all leaves, even if not referenced (needed to build prefix list)
-      v2001:
-      v2002:
-      v3001:
-      v3010: # Pulling in a vlan should pull in any vrfs referenced - currently does not
+    # node_data:
+    #  vlans:  # Pull in all customer VLANs on all leaves, even if not referenced (needed to build prefix list)
+    #   v2001:
+    #   v2002:
+    #   v3001:
+    #   v3010: # Pulling in a vlan should pull in any vrfs referenced - currently does not
 
-      global:
-        vrf: global
-        prefix: 8.8.8.8/32
+    #   global:
+    #     vrf: global
+    #     prefix: 8.8.8.8/32
 
   mpls:
     members: [ mplsnet ]

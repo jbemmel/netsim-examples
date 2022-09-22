@@ -8,8 +8,8 @@ updates:
    member: [ "no-advertise" ]
 
 {# Create per-customer prefix lists, named using their community #}
-{% for vname, vdata in vlans.items() if vdata.vrf is defined and vdata.prefix is defined %}
-{% set community = vrfs[vdata.vrf].export[0] %}
+{% for vname, vdata in topology.vlans.items() if vdata.vrf is defined and vdata.prefix is defined %}
+{% set community = topology.vrfs[vdata.vrf].export[0] %}
 - path: routing-policy/prefix-set[name=C{{ community|replace(':','_') }}]
   val:
    prefix:
@@ -17,7 +17,7 @@ updates:
      mask-length-range: exact
 {% endfor %}
 
-{% for vname,vdata in vrfs.items() if vname!='global' and 'bgp' in vdata %}
+{% for vname,vdata in vrfs.items() if vname!='global' %}
 - path: routing-policy/policy[name={{vname}}_ebgp_export_new]
   val:  
    default-action:

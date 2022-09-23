@@ -1,3 +1,6 @@
+route-map only-advertise-connected permit 5
+ match source-protocol connected
+exit
 route-map no-advertise permit 10
  set community no-advertise
 exit
@@ -6,7 +9,7 @@ exit
 router bgp {{ bgp.as }} vrf {{ vname }}
 
  address-family ipv4 unicast
-  import vrf route-map no-advertise
+  import vrf route-map only-advertise-connected
  exit-address-family
  !
 exit

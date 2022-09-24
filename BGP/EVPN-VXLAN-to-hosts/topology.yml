@@ -19,39 +19,20 @@ bgp:
       rr: [ spine ]
   
   # sessions: # Transport sessions to use, use defaults
-  #  ipv4: [ ibgp ] # IBGP-v4 over EBGP-v6
+  #  ipv4: [ ibgp, ebgp ] # IBGP-v4 over EBGP-v6
   #  ipv6: [ ebgp ]
   activate: # Address families to activate
     ipv4: [ ebgp ] # Only activate ipv4 over eBGP, use iBGP for EVPN only
 
+evpn.session: [ ibgp ] # default = ibgp
+# plugin: [ ibgp-to-ebgp-local_as ]
+
 provider: clab
-
-groups:
-  frr_servers: # TODO: VRF route leaking using route maps on these hosts
-    members: [ frr-bgp-s1, frr-bgp-s2 ]
-    device: frr
-    module: [ vlan,vxlan,bgp,evpn,vrf ]
-    config: [ frr-allowas-in.j2,frr-no-readvertise.j2 ]
-    node_data:
-      vrfs:
-        internet: # Pull in internet vrf for route leaking
-
-  hosts:
-    members: [ h1,h2,h3,h4 ]
-    device: linux
-    module: []
-
-  fabric:
-    members: [ spine, leaf1, leaf2 ]
-    device: srlinux
-    module: [ vlan,vxlan,bgp,evpn,vrf ]
 
 vrfs:
   internet:
     evpn.transit_vni: True # enable symmetric irb
     loopback: True
-    import: [internet,customer1,customer2]
-    export: [internet]
 
   customer1:
     evpn.transit_vni: True
@@ -60,8 +41,47 @@ vrfs:
   
   customer2:
     evpn.transit_vni: True
-    import: [customer2,internet]
+    import: [customer2,internet,customer3]
     export: [customer2]
+
+  customer3: # Plain vlan between bare metal servers, but allow connecting to customer2
+    evpn.transit_vni: True
+    import: [customer3,customer2]
+    export: [customer3]
+
+groups:
+  frr_servers: # TODO: VRF route leaking using route maps on these hosts
+    members: [ frr-bgp-s1, frr-bgp-s2 ]
+    device: frr
+    module: [ vlan,vxlan,bgp,evpn,vrf ]
+    config: [ frr-allowas-in.j2,frr-no-readvertise.j2 ]
+    node_data:
+      # bgp.as: 65100
+      # bgp.local_as: 65000
+      # evpn.local_as: 65100 # Use eBGP for EVPN through local_as, but have the core modules build transport sessions between loopbacks
+      # evpn.ebgp_as: 65100
+      vrfs:
+        internet: # Pull in internet vrf for route leaking, define import/export here
+         import: [internet,customer1,customer2]  # import connected routes to advertise to spine
+         export: [ "64999:0", internet ]         # Unique backbone community used as EVPN RT, 'internet' for vrf leaking
+
+  hub:
+    members: [ spine ]
+    node_data:
+      vrfs:
+        internet: # Pull in internet vrf for route leaking, define import/export here as hub site
+         import: [ "64999:0" ]
+         export: [internet]
+
+  hosts:
+    members: [ vm1,vm2,vm3,vm4,bm1,bm2 ]
+    device: linux
+    module: []
+
+  fabric:
+    members: [ spine, leaf1, leaf2 ]
+    device: srlinux
+    module: [ vlan,vxlan,bgp,evpn,vrf ]
 
 vlans:
   c1-vlan:
@@ -72,6 +92,10 @@ vlans:
     vni: True
     vrf: customer2
 
+  c3-vlan:
+    vni: True
+    vrf: customer3
+
   internet:
     vni: True
     mode: route   # No irb interface -> no l2 vni possible
@@ -80,6 +104,15 @@ vlans:
 # vxlan.vlans: [ internet ]
 
 nodes:
+  vm1:
+  vm2:
+  vm3:
+  vm4:
+
+  # Customer 3 bare metal servers, TODO LAG with EVPN-MH
+  bm1:
+  bm2:
+
   spine:
     bgp.local_as: 65100
     clab:
@@ -96,27 +129,30 @@ nodes:
   frr-bgp-s2:
     bgp.local_as: 65103 # Same for all hosts -> hosts do not accept specific routes to other hosts unless allow-ownas is set
 
-  h1:
-  h2:
-  h3:
-  h4:
-
 links:
-- h1:
+- vm1:
   frr-bgp-s1:
     vlan.access: c1-vlan
 
-- h2:
+- vm2:
   frr-bgp-s2:
     vlan.access: c1-vlan
 
-- h3:
+- vm3:
   frr-bgp-s1:
     vlan.access: c2-vlan
 
-- h4:
+- vm4:
   frr-bgp-s2:
     vlan.access: c2-vlan
+
+- bm1:
+  leaf1:
+    vlan.access: c3-vlan
+
+- bm2:
+  leaf2:
+    vlan.access: c3-vlan
 
 # ECMP across both leaves
 - frr-bgp-s1:

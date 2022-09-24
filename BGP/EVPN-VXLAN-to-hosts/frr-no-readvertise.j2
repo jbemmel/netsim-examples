@@ -10,6 +10,7 @@ route-map prevent-double-leaking permit 5
 exit
 route-map prevent-double-leaking permit 10
  ! non-connected routes imported from Internet
+ set tag 3
 exit
 
 route-map tag-internet-imports permit 1
@@ -29,10 +30,11 @@ exit
 
 {# Configure EVPN export route-map to block advertisement of leaked prefixes to EVPN peers #}
 route-map only-direct-connected-routes deny 1
- ! Exclude leaked connected routes
- match tag 2
+! Drop leaked Internet routes
+ match tag 3
 exit
 route-map only-direct-connected-routes permit 2
+! Includes leaked connected routes
  match source-protocol connected
 exit
 route-map only-direct-connected-routes deny 5

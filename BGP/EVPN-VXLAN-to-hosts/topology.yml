@@ -64,6 +64,8 @@ groups:
          export: [ "64999:0", internet ]         # Unique backbone community used as EVPN RT, 'internet' for vrf leaking
 
         customer3: # Need to pull in this VRF too, for leaking with customer2
+         af:
+          ipv4: True # Enable advertisement of ipv4 prefixes, should happen due to leaf1/leaf2 but doesn't
 
   hub:
     members: [ spine ]

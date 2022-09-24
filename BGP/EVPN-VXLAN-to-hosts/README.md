@@ -1,19 +1,17 @@
-# BGP EVPN VXLAN to Linux hosts with L3 anycast gateways on leaves
+# BGP EVPN VXLAN to Linux hosts with FRR Route Leaking
 
-![image](https://user-images.githubusercontent.com/2031627/151012844-ac984a74-1803-433d-82f9-1157d87d26a8.png)
+![image](https://user-images.githubusercontent.com/2031627/192073414-2c224fd0-e457-47f5-9c7d-862518a4121a.png)
 
 * Dual connected Linux hosts (FRR)
 * Redundant dual eBGP sessions with pair of ToRs (7220 IXR-D2s)
 * Double iBGP EVPN session from loopback towards Route Reflectors (spines, 7220 IXR-D3)
 
 ## Prerequisites
-* Netsim-Tools 'dev' branch: ```git clone https://github.com/ipspace/netsim-tools.git --branch dev```
-* Nokia gRPC plugin: ```ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/```
-* + dependencies: ```python3 -m pip install grpcio protobuf```
+* Netlab 'dev' branch: ```git clone https://github.com/ipspace/netlab.git --branch dev```
 
-To deploy (assuming you have ```source netsim-tools/setup.sh```)
+To deploy (assuming you have done ```source netlab/setup.sh```)
 ```
-git clone https://github.com/jbemmel/netsim-examples.git --branch evpn-vxlan-to-hosts
+git clone https://github.com/jbemmel/netsim-examples.git --branch evpn-vxlan-to-hosts-v2
 cd netsim-examples/BGP/EVPN-VXLAN-to-hosts
 netlab up
 ```

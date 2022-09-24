@@ -1,4 +1,11 @@
-## Testing topology for iBGP over eBGP with SR Linux
+## Testing topology for VXLAN to FRR hosts using iBGP over eBGP with SR Linux
+#
+# Use case with 3 customers and Internet access:
+# 1. Customer 1 can reach their own servers and the Internet
+# 2. Customer 2 can reach their own, Customer 3 and the Internet
+# 3. Customer 3 can reach their own and Customer 2, but not Internet
+#
+# Uses VRF route leaking on the FRR hosts, with a hub-spoke EVPN transit backbone to the spine(s) for Internet
 
 addressing:
   fabric:
@@ -6,15 +13,11 @@ addressing:
     ipv4: true
     ipv6: true
 
-  routed-vlan:
-    ipv4: 192.0.0.0/24
-    prefix: 28 # not too small
-
 bgp:
   advertise_loopback: all
   as: 65000 # iBGP AS
   as_list:
-    65000: # EVPN overlay with Route Reflectors at spine
+    65000: # EVPN overlay with Route Reflector at spine(s)
       members: [ leaf1,leaf2,spine,frr-bgp-s1,frr-bgp-s2 ]
       rr: [ spine ]
   
@@ -24,8 +27,7 @@ bgp:
   activate: # Address families to activate
     ipv4: [ ebgp ] # Only activate ipv4 over eBGP, use iBGP for EVPN only
 
-evpn.session: [ ibgp ] # default = ibgp
-# plugin: [ ibgp-to-ebgp-local_as ]
+evpn.session: [ ibgp ] # default
 
 provider: clab
 
@@ -56,12 +58,8 @@ groups:
     module: [ vlan,vxlan,bgp,evpn,vrf ]
     config: [ frr-allowas-in.j2,frr-no-readvertise.j2 ]
     node_data:
-      # bgp.as: 65100
-      # bgp.local_as: 65000
-      # evpn.local_as: 65100 # Use eBGP for EVPN through local_as, but have the core modules build transport sessions between loopbacks
-      # evpn.ebgp_as: 65100
       vrfs:
-        internet: # Pull in internet vrf for route leaking, define import/export here
+        internet: # Pull in internet vrf for route leaking, define import/export here for spoke sites
          import: [internet,customer1,customer2]  # import connected routes to advertise to spine
          export: [ "64999:0", internet ]         # Unique backbone community used as EVPN RT, 'internet' for vrf leaking
 
@@ -101,9 +99,10 @@ vlans:
     mode: route   # No irb interface -> no l2 vni possible
     vrf: internet
 
-# vxlan.vlans: [ internet ]
+# vxlan.vlans: [ *all the above* ]
 
 nodes:
+  # Customer 1&2 Virtual Machines
   vm1:
   vm2:
   vm3:
@@ -117,7 +116,6 @@ nodes:
     bgp.local_as: 65100
     clab:
       type: ixrd3 # 32x100G ports
-    # module: [ vxlan,bgp,evpn,vrf ] # Test: remove vlan module
 
   leaf1:
     bgp.local_as: 65101

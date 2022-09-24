@@ -20,7 +20,7 @@ exit
 !
 {% endfor %}
 
-{# Configure EVPN export route-map to block advertisement of leaked connected prefixes #}
+{# Configure EVPN export route-map to block advertisement of leaked prefixes received from Internet to EVPN peers #}
 route-map evpn-drop-leaked-connected deny 1
  ! Export policy to avoid advertising leaked connected routes via EVPN
  match tag 1
@@ -29,9 +29,6 @@ route-map evpn-drop-leaked-connected permit 2
 exit
 
 router bgp {{ bgp.as }}
-
- ! Configure the bgp cluster-id on all hosts, such that they drop each other's prefixes? Doesn't work
- ! bgp cluster-id 99.99.99.99
 
  address-family l2vpn evpn
 {% for n in bgp.neighbors if n.evpn|default(False) %}

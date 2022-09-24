@@ -13,8 +13,24 @@ route-map prevent-double-leaking permit 10
  set tag 3
 exit
 
-route-map tag-internet-imports permit 1
+! Drop tagged routes
+route-map tag-internet-imports deny 1
+ match tag 1
+exit
+route-map tag-internet-imports deny 2
+ match tag 2
+exit
+route-map tag-internet-imports deny 3
+ match tag 3
+exit
+route-map tag-internet-imports permit 5
+ match source-protocol connected
+ ! Customer routes
  set tag 1
+exit
+route-map tag-internet-imports permit 6
+ ! Routes on behalf of other VTEPs that cannot do vrf leaking
+ set tag 4
 exit
 
 {% for vname in vrfs %}
@@ -34,10 +50,15 @@ route-map only-direct-connected-routes deny 1
  match tag 3
 exit
 route-map only-direct-connected-routes permit 2
-! Includes leaked connected routes
+! Includes leaked connected routes and untagged connected routes
  match source-protocol connected
 exit
+route-map only-direct-connected-routes permit 4
+! Remote VTEP routes that cannot do leaking locally
+ match tag 4
+exit
 route-map only-direct-connected-routes deny 5
+exit
 
 router bgp {{ bgp.as }}
  address-family l2vpn evpn

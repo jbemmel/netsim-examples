@@ -31,6 +31,8 @@ evpn.session: [ ibgp ] # default
 
 provider: clab
 
+vrf.bgp: False # Prevent ebgp session between leaves
+
 vrfs:
   internet:
     evpn.transit_vni: True # enable symmetric irb
@@ -50,40 +52,6 @@ vrfs:
     evpn.transit_vni: True
     import: [customer3,customer2]
     export: [customer3]
-
-groups:
-  frr_servers: # TODO: VRF route leaking using route maps on these hosts
-    members: [ frr-bgp-s1, frr-bgp-s2 ]
-    device: frr
-    module: [ vlan,vxlan,bgp,evpn,vrf ]
-    config: [ frr-allowas-in.j2,frr-no-readvertise.j2 ]
-    node_data:
-      vrfs:
-        internet: # Pull in internet vrf for route leaking, define import/export here for spoke sites
-         import: [internet,customer1,customer2]  # import connected routes to advertise to spine
-         export: [ "64999:0", internet ]         # Unique backbone community used as EVPN RT, 'internet' for vrf leaking
-
-        customer3: # Need to pull in this VRF too, for leaking with customer2
-         af:
-          ipv4: True # Enable advertisement of ipv4 prefixes, should happen due to leaf1/leaf2 but doesn't
-
-  hub:
-    members: [ spine ]
-    node_data:
-      vrfs:
-        internet: # Pull in internet vrf for route leaking, define import/export here as hub site
-         import: [ "64999:0" ]
-         export: [internet]
-
-  hosts:
-    members: [ vm1,vm2,vm3,vm4,bm1,bm2 ]
-    device: linux
-    module: []
-
-  fabric:
-    members: [ spine, leaf1, leaf2 ]
-    device: srlinux
-    module: [ vlan,vxlan,bgp,evpn,vrf ]
 
 vlans:
   c1-vlan:
@@ -105,6 +73,43 @@ vlans:
 
 # vxlan.vlans: [ *all the above* ]
 
+groups:
+  frr_servers: # TODO: VRF route leaking using route maps on these hosts
+    members: [ frr-bgp-s1, frr-bgp-s2 ]
+    device: frr
+    module: [ vlan,vxlan,bgp,evpn,vrf ]
+    config: [ frr-allowas-in.j2,frr-no-readvertise.j2 ]
+    node_data:
+      vrfs:
+        internet: # Pull in internet vrf for route leaking, define import/export here for spoke sites
+         import: [internet,customer1,customer2]  # import connected routes to advertise to spine
+         export: [ "64999:0", internet ]         # Unique backbone community used as EVPN RT, 'internet' for vrf leaking
+
+        customer3: # Need to pull in this VRF too, for leaking with customer2
+         af:
+          ipv4: True # Enable advertisement of ipv4 prefixes, should happen due to leaf1/leaf2 but doesn't
+
+      # vlans:
+      #  c3-vlan: # Need to pull in this vlan, if frr does not have the vni it cannot install the /32 host route
+
+  hub:
+    members: [ spine ]
+    node_data:
+      vrfs:
+        internet: # Pull in internet vrf for route leaking, define import/export here as hub site
+         import: [ "64999:0" ]
+         export: [internet]
+
+  hosts:
+    members: [ vm1,vm2,vm3,vm4,bm1,bm2,vm5 ]
+    device: linux
+    module: []
+
+  fabric:
+    members: [ spine, leaf1, leaf2 ]
+    device: srlinux
+    module: [ vlan,vxlan,bgp,evpn,vrf ]
+
 nodes:
   # Customer 1&2 Virtual Machines
   vm1:
@@ -113,6 +118,7 @@ nodes:
   vm4:
 
   # Customer 3 bare metal servers, TODO LAG with EVPN-MH
+  vm5:
   bm1:
   bm2:
 
@@ -147,6 +153,10 @@ links:
 - vm4:
   frr-bgp-s2:
     vlan.access: c2-vlan
+
+- vm5:
+  frr-bgp-s2:
+    vlan.access: c3-vlan # Test: pull in vlan
 
 - bm1:
   leaf1:

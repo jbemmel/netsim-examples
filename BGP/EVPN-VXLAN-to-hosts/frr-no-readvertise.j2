@@ -1,19 +1,22 @@
 
-route-map drop-leaked-connected-routes deny 1
- ! Avoid passing on leaked connected routes from internet vrf to other customer vrfs
- match tag 1
-exit
-route-map drop-leaked-connected-routes permit 5
- match source-protocol connected
- ! Mark leaked connected prefixes with a tag for filtering, to avoid chained leaking
+route-map tag-internet-routes permit 1
  set tag 1
 exit
 
-{% for vname in vrfs if vname!="internet" %}
+route-map drop-leaked-routes deny 1
+ ! Avoid passing on leaked routes via internet vrf to other customer vrfs
+ match tag 2
+exit
+route-map drop-leaked-routes permit 5
+  ! Mark leaked prefixes with a tag for filtering, to avoid chained leaking
+ set tag 2
+exit
+
+{% for vname in vrfs %}
 router bgp {{ bgp.as }} vrf {{ vname }}
 
  address-family ipv4 unicast
-  import vrf route-map drop-leaked-connected-routes
+  import vrf route-map {{ 'tag-internet-routes' if vname=="internet" else 'drop-leaked-routes' }}
  exit-address-family
  !
 exit
@@ -21,18 +24,18 @@ exit
 {% endfor %}
 
 {# Configure EVPN export route-map to block advertisement of leaked prefixes received from Internet to EVPN peers #}
-route-map evpn-drop-leaked-connected deny 1
- ! Export policy to avoid advertising leaked connected routes via EVPN
+route-map evpn-drop-leaked-internet deny 1
+ ! Export policy to avoid advertising leaked internet routes via EVPN
  match tag 1
 exit
-route-map evpn-drop-leaked-connected permit 2
+route-map evpn-drop-leaked-internet permit 2
 exit
 
 router bgp {{ bgp.as }}
 
  address-family l2vpn evpn
 {% for n in bgp.neighbors if n.evpn|default(False) %}
-  neighbor {{ n.ipv4 if n.ipv4 is string else n.local_if }} route-map evpn-drop-leaked-connected out
+  neighbor {{ n.ipv4 if n.ipv4 is string else n.local_if }} route-map evpn-drop-leaked-internet out
 {% endfor %}
  exit-address-family
 exit

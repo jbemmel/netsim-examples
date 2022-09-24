@@ -63,6 +63,8 @@ groups:
          import: [internet,customer1,customer2]  # import connected routes to advertise to spine
          export: [ "64999:0", internet ]         # Unique backbone community used as EVPN RT, 'internet' for vrf leaking
 
+        customer3: # Need to pull in this VRF too, for leaking with customer2
+
   hub:
     members: [ spine ]
     node_data:

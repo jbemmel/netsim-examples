@@ -1,11 +1,22 @@
-## Testing topology for VXLAN to FRR hosts using iBGP over eBGP with SR Linux
-#
-# Use case with 3 customers and Internet access:
-# 1. Customer 1 can reach their own servers and the Internet
-# 2. Customer 2 can reach their own, Customer 3 and the Internet
-# 3. Customer 3 can reach their own and Customer 2, but not Internet
-#
-# Uses VRF route leaking on the FRR hosts, with a hub-spoke EVPN transit backbone to the spine(s) for Internet
+message: |
+ Testing topology for VXLAN to FRR hosts using iBGP over eBGP with SR Linux
+
+ Use case with 3 customers and Internet access:
+ 1. Customer 1 can reach their own servers and the Internet
+ 2. Customer 2 can reach their own servers, Customer 3 and the Internet
+ 3. Customer 3 can reach their own servers and Customer 2, but not Internet
+
+ Uses VRF route leaking on the FRR hosts, with a hub-spoke EVPN transit backbone to the spine(s) for Internet
+
+ Control plane: EVPN with iBGP-over-eBGP
+ P2P: BGP unnumbered with RFC8950 (ipv6 next hops for ipv4 prefixes)
+
+ * vm1 and vm2 should be able to ping each other: docker exec -it clab-EVPN-VXLAN-to-hosts-vm1 ping 172.16.0.2 -c 2
+ * vm1 can ping the Internet:                     docker exec -it clab-EVPN-VXLAN-to-hosts-vm1 ping 8.8.8.8 -c 2
+ * vm3 can ping Customer 3 servers like vm5:      docker exec -it clab-EVPN-VXLAN-to-hosts-vm3 ping 172.16.2.5 -c 2
+ * ... and on SR Linux leaves bm1:                docker exec -it clab-EVPN-VXLAN-to-hosts-vm3 ping 172.16.2.6 -c 2
+
+ Note that pinging a host that has been silent may not work immediately
 
 addressing:
   fabric:
@@ -31,7 +42,7 @@ evpn.session: [ ibgp ] # default
 
 provider: clab
 
-# vrf.bgp: False # Prevent ebgp session between leaves
+vrf.bgp: False # Prevent ebgp session between leaves
 
 vrfs:
   internet:

@@ -16,7 +16,8 @@ message: |
  * vm3 can ping Customer 3 servers like vm5:      docker exec -it clab-EVPN-VXLAN-to-hosts-vm3 ping 172.16.2.5 -c 2
  * ... and on SR Linux leaves bm1:                docker exec -it clab-EVPN-VXLAN-to-hosts-vm3 ping 172.16.2.6 -c 2
 
- Note that pinging a host that has been silent may not work immediately
+ Note that pinging a host that has been silent may not work immediately. c3-vlan would normally have an anycast gateway address 
+ (because it is distributed over multiple nodes) and hence ARP for bm1 would work. As it is, this is not the case
 
 addressing:
   fabric:

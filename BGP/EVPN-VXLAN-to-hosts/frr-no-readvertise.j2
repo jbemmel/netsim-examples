@@ -6,6 +6,11 @@ exit
 route-map prevent-double-leaking permit 2
  ! Avoid replacing tag 2 on leaked evpn routes with tag 1
  match tag 2
+ set tag 3
+exit
+route-map prevent-double-leaking deny 3
+ ! Avoid double-leaked evpn routes
+ match tag 3
 exit
 route-map prevent-double-leaking permit 11
  match source-protocol connected
@@ -34,11 +39,15 @@ route-map only-direct-connected-routes deny 2
  description "Drop evpn routes received from peers"
  match tag 2
 exit
-route-map only-direct-connected-routes permit 3
- match source-protocol connected
- set community {{ _id }}:3 additive
+route-map only-direct-connected-routes deny 3
+ description "Drop leaked evpn routes"
+ match tag 3
 exit
-route-map only-direct-connected-routes deny 4
+route-map only-direct-connected-routes permit 4
+ match source-protocol connected
+ set community {{ _id }}:4 additive
+exit
+route-map only-direct-connected-routes deny 5
 exit
 
 route-map tag-evpn-in permit 1

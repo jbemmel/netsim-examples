@@ -3,41 +3,15 @@ route-map prevent-double-leaking deny 1
  ! Avoid passing on leaked connected routes via internet vrf to other customer vrfs
  match tag 1
 exit
-route-map prevent-double-leaking permit 5
- ! Permit once but add tag to connected routes for filtering on export to evpn
- match source-protocol connected
- set tag 2
-exit
-route-map prevent-double-leaking permit 10
- ! non-connected routes imported from Internet
- set tag 3
-exit
-
-! Drop tagged routes
-route-map tag-internet-imports deny 1
- match tag 1
-exit
-route-map tag-internet-imports deny 2
- match tag 2
-exit
-route-map tag-internet-imports deny 3
- match tag 3
-exit
-route-map tag-internet-imports permit 5
- match source-protocol connected
- ! Customer routes
+route-map prevent-double-leaking permit 2
  set tag 1
-exit
-route-map tag-internet-imports permit 6
- ! Routes on behalf of other VTEPs that cannot do vrf leaking
- set tag 4
 exit
 
 {% for vname in vrfs %}
 router bgp {{ bgp.as }} vrf {{ vname }}
 
  address-family ipv4 unicast
-  import vrf route-map {{ 'tag-internet-imports' if vname=="internet" else 'prevent-double-leaking' }}
+  import vrf route-map prevent-double-leaking
  exit-address-family
  !
 exit
@@ -45,19 +19,17 @@ exit
 {% endfor %}
 
 {# Configure EVPN export route-map to block advertisement of leaked prefixes to EVPN peers #}
-route-map only-direct-connected-routes deny 1
-! Drop leaked Internet routes
- match tag 3
+route-map only-direct-connected-routes permit 1
+ description "Permit and mark leaked connected routes and routes from Internet vrf"
+ match tag 1
+ set community 1:1 additive
 exit
 route-map only-direct-connected-routes permit 2
-! Includes leaked connected routes and untagged connected routes
  match source-protocol connected
+ set community 2:2 additive
 exit
-route-map only-direct-connected-routes permit 4
-! Remote VTEP routes that cannot do leaking locally
- match tag 4
-exit
-route-map only-direct-connected-routes deny 5
+route-map only-direct-connected-routes permit 3
+ set community 3:3 additive
 exit
 
 router bgp {{ bgp.as }}

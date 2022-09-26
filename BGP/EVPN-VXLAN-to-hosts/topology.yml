@@ -31,7 +31,7 @@ evpn.session: [ ibgp ] # default
 
 provider: clab
 
-vrf.bgp: False # Prevent ebgp session between leaves
+# vrf.bgp: False # Prevent ebgp session between leaves
 
 vrfs:
   internet:

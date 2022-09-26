@@ -1,6 +1,6 @@
 # BGP EVPN VXLAN to Linux hosts with FRR Route Leaking
 
-![image](https://user-images.githubusercontent.com/2031627/192073414-2c224fd0-e457-47f5-9c7d-862518a4121a.png)
+![image](https://user-images.githubusercontent.com/2031627/192392027-1a9af043-d871-4246-b19f-6aca4563dfd4.png)
 
 * Dual connected Linux hosts (FRR) with attached Linux hosts (representing VMs or containers)
 * Redundant dual eBGP sessions with pair of ToRs (7220 IXR-D2s)
@@ -30,3 +30,6 @@ FRR requires a special flag 'bgp bestpath as-path multipath-relax' in order to t
 
 # Routing policies
 
+![image](https://user-images.githubusercontent.com/2031627/192073414-2c224fd0-e457-47f5-9c7d-862518a4121a.png)
+
+This topology includes some advanced routing policies to enable route leaking between various VRFs.

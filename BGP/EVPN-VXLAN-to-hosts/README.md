@@ -2,8 +2,10 @@
 
 ![image](https://user-images.githubusercontent.com/2031627/192392027-1a9af043-d871-4246-b19f-6aca4563dfd4.png)
 
-* Dual connected Linux hosts (FRR) with attached Linux hosts (representing VMs or containers)
+* Dual connected Linux nodes (FRR) with attached Linux hosts vm1..vm5 (representing VMs or containers)
 * Redundant dual eBGP sessions with pair of ToRs (7220 IXR-D2s)
+* 2 bare metal Linux hosts (bm1,bm2) attached to ToRs
+* eBGP ipv6 unnumbered on all p2p links
 * Double iBGP EVPN session from loopback towards Route Reflectors (spines, 7220 IXR-D3)
 
 ## Prerequisites

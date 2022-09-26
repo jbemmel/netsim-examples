@@ -19,18 +19,23 @@ exit
 {% endfor %}
 
 {# Configure EVPN export route-map to block advertisement of leaked prefixes to EVPN peers #}
-{% set _id = bgp.router_id.split('.')[3] %}
+{% set _id = (bgp.router_id|ipaddr('address')).split('.')[3] %}
 route-map only-direct-connected-routes permit 1
- description "Permit and mark leaked connected routes and routes from Internet vrf"
+ description "Permit and mark leaked connected routes"
+ match source-protocol connected
  match tag 1
  set community {{ _id }}:1 additive
 exit
-route-map only-direct-connected-routes permit 2
- match source-protocol connected
- set community {{ _id }}:2 additive
+route-map only-direct-connected-routes deny 2
+ description "Drop leaked non-connected routes"
+ match tag 1
 exit
 route-map only-direct-connected-routes permit 3
+ match source-protocol connected
  set community {{ _id }}:3 additive
+exit
+route-map only-direct-connected-routes permit 4
+ set community {{ _id }}:4 additive
 exit
 
 router bgp {{ bgp.as }}

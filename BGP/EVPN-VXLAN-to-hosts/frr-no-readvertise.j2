@@ -3,8 +3,16 @@ route-map prevent-double-leaking deny 1
  ! Avoid passing on leaked connected routes via internet vrf to other customer vrfs
  match tag 1
 exit
-route-map prevent-double-leaking permit 2
+route-map prevent-double-leaking deny 2
+ ! Avoid passing on leaked connected routes via internet vrf to other customer vrfs
+ match tag 2
+exit
+route-map prevent-double-leaking permit 11
+ match source-protocol connected
  set tag 1
+exit
+route-map prevent-double-leaking permit 12
+ set tag 2
 exit
 
 {% for vname in vrfs %}
@@ -22,20 +30,18 @@ exit
 {% set _id = (bgp.router_id|ipaddr('address')).split('.')[3] %}
 route-map only-direct-connected-routes permit 1
  description "Permit and mark leaked connected routes"
- match source-protocol connected
  match tag 1
  set community {{ _id }}:1 additive
 exit
 route-map only-direct-connected-routes deny 2
  description "Drop leaked non-connected routes"
- match tag 1
+ match tag 2
 exit
 route-map only-direct-connected-routes permit 3
  match source-protocol connected
  set community {{ _id }}:3 additive
 exit
-route-map only-direct-connected-routes permit 4
- set community {{ _id }}:4 additive
+route-map only-direct-connected-routes deny 4
 exit
 
 router bgp {{ bgp.as }}

@@ -4,10 +4,10 @@ message: |
   Control plane: EVPN with iBGP-over-eBGP
   P2P: BGP unnumbered with RFC8950 (ipv6 next hops for ipv4 prefixes)
 
-  * h1 and h2 (customer 1) should be able to ping each other: docker exec -it clab-SRL-Route-Leaking-h1 ping 172.16.1.2 -c 2
-  * All nodes should be able to reach the Internet:           docker exec -it clab-SRL-Route-Leaking-h1 ping 8.8.8.8
-  * h3 and h4 (customer 2) should be able to ping each other: docker exec -it clab-SRL-Route-Leaking-h3 ping 172.16.3.4 -c 2
-  * h1 should not be able to reach h3 or h4    :              docker exec -it clab-SRL-Route-Leaking-h1 ping 172.16.3.4 -c 2
+  * h1 and h2 (customer 1) should be able to ping each other:   docker exec -it clab-SRL-Route-Leaking-h1 ping 172.16.1.2 -c 2
+  * All nodes should be able to reach the Internet:             docker exec -it clab-SRL-Route-Leaking-h1 ping 8.8.8.8
+  * h3 and h4 (customer 2/3) should be able to ping each other: docker exec -it clab-SRL-Route-Leaking-h3 ping 172.16.3.4 -c 2
+  * h1 should not be able to reach h3 or h4    :                docker exec -it clab-SRL-Route-Leaking-h1 ping 172.16.3.4 -c 2
 
   To see routing policies: docker exec -it clab-SRL-Route-Leaking-leaf1 sr_cli "info /routing-policy policy customer1_ebgp_import_new"
 
@@ -176,7 +176,7 @@ groups:
     module: [ bgp, vrf ]  # Pure eBGP, need vrf to set correct communities on exported prefixes
 
   hosts:
-    members: [ h1,h2,h3,h4 ]
+    members: [ h1,h2,h3,h4,h5 ]
     device: linux
     module: []
 
@@ -187,7 +187,10 @@ nodes:
 
   # Customer 2
   h3:
+
+  # Customer 3
   h4:
+  h5:
 
   spine1:
     # device: sros
@@ -235,15 +238,14 @@ links:
 #     vlan.access: v3001
 #   h3:
 
-# Customer 3 host
-
-# - leaf1:
-#     vlan.access: v3010
-#   h4:
+# Customer 3 hosts - same vlan
+- leaf1:
+    vlan.access: v3010
+  h4:
 
 - leaf2:
     vlan.access: v3010
-  h4:
+  h5:
 
 - leaf1:
    ifindex: 49

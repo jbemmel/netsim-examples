@@ -1,3 +1,14 @@
+message: |
+  The devices under test are SR Linux spines and leaves, performing VRF route leaking on the latter using a physical loop link. 
+
+  Control plane: EVPN with iBGP-over-eBGP
+  P2P: BGP unnumbered with RFC8950 (ipv6 next hops for ipv4 prefixes)
+
+  * h1 and h2 (customer 1) should be able to ping each other: docker exec -it clab-SRL-Route-Leaking-h1 ping 172.16.1.2 -c 2
+  * h1 should be able to reach the Internet:                  docker exec -it clab-SRL-Route-Leaking-h1 ping 8.8.8.8
+  * h3 and h4 (customer 2) should be able to ping each other: docker exec -it clab-SRL-Route-Leaking-h3 ping 172.16.3.4 -c 2
+  * h1 should not be able to reach h3 or h4    :              docker exec -it clab-SRL-Route-Leaking-h1 ping 172.16.3.4 -c 2
+
 provider: clab
 
 plugin: [ topology-data ]

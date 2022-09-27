@@ -40,6 +40,7 @@ bgp:
     ipv4: [ ebgp ] # Only activate ipv4 over eBGP, use iBGP for EVPN only
 
 evpn.session: [ ibgp ] # default
+evpn.enforce_unique_transit_vni: False # Allow hub/spoke vrfs to have same VNI
 
 provider: clab
 
@@ -48,9 +49,15 @@ provider: clab
 vrfs:
   # Hub/spoke vrfs: evpn.transit_vni set to the same value on both spine and FRR nodes
   #
+  internet_hub:
+    evpn.transit_vni: 200000 # Must use same L3 vni in each direction
+    import: [ internet ]
+    export: [ internet_hub ]
+
   internet:
-    evpn.transit_vni: True
-    loopback: True
+    evpn.transit_vni: 200000
+    import: [ internet_hub,customer1,customer2,customer3 ]
+    export: [ internet ]
 
   customer1:
     evpn.transit_vni: True
@@ -83,16 +90,26 @@ vlans:
   internet:
     vni: True
     mode: route   # No irb interface -> no l2 vni possible
-    vrf: internet
+    vrf: internet_hub
 
 # vxlan.vlans: [ *all the above* ]
 
 groups:
-  frr_servers: # TODO: VRF route leaking using route maps on these hosts
+  frr_servers:
     members: [ frr-bgp-s1, frr-bgp-s2 ]
     device: frr
     module: [ vlan,vxlan,bgp,evpn,vrf ]
     config: [ frr-allowas-in.j2,frr-no-readvertise.j2 ]
+
+    node_data:
+      vrfs:
+        internet:
+          af:
+            ipv4: True
+
+        customer3: # Need to pull in this VRF too, for leaking with customer2
+          af:
+            ipv4: True # Enable advertisement of ipv4 prefixes, should happen due to leaf1/leaf2 but doesn't
 
   hosts:
     members: [ vm1,vm2,vm3,vm4,bm1,bm2,vm5 ]
@@ -121,12 +138,6 @@ nodes:
     clab:
       type: ixrd3 # 32x100G ports
 
-    vrfs:
-      internet: # Pull in internet vrf for route leaking, define import/export here as hub site
-         
-       import: [ "64999:0" ]
-       export: [ internet ]
-
   leaf1:
     bgp.local_as: 65101
   leaf2:
@@ -135,29 +146,8 @@ nodes:
   frr-bgp-s1:
     bgp.local_as: 65103 # Cannot be same as overlay, else AS loop
 
-    vrfs:
-      internet: # Internet vrf for route leaking, define import/export here for spoke sites
-         
-       import: [internet,customer1,customer2]  # import connected routes to advertise to spine
-       export: [ "64999:0", internet ]         # Unique backbone community used as EVPN RT, 'internet' for vrf leaking
-
-      customer3: # Need to pull in this VRF too, for leaking with customer2
-       af:
-        ipv4: True # Enable advertisement of ipv4 prefixes, should happen due to leaf1/leaf2 but doesn't
-
   frr-bgp-s2:
     bgp.local_as: 65103 # Same for all hosts -> hosts do not accept specific routes to other hosts unless allow-ownas is set
-
-    # Copy & paste, cannot currently define this at group level
-    vrfs:
-      internet: # Internet vrf for route leaking, define import/export here for spoke sites
-         
-       import: [internet,customer1,customer2]  # import connected routes to advertise to spine
-       export: [ "64999:0", internet ]         # Unique backbone community used as EVPN RT, 'internet' for vrf leaking
-
-      customer3: # Need to pull in this VRF too, for leaking with customer2
-       af:
-        ipv4: True # Enable advertisement of ipv4 prefixes, should happen due to leaf1/leaf2 but doesn't
 
 links:
 - vm1:

@@ -35,23 +35,25 @@ provider: clab
 # vrf.bgp: False # Prevent ebgp session between leaves
 
 vrfs:
-  # Hub/spoke vrfs: evpn.transit_vni set to unique value in each direction
+  # Hub/spoke vrfs: evpn.transit_vni set to unique value in each direction -> does not work
   #
-  internet_hub:
-    evpn.transit_vni: True # Unique L3 vni in each direction (!)
-    evpn.prefix_routes_only: True
-    import: [ internet ]
-    export: [ internet_hub ]
+  # internet_hub:
+  #   evpn.transit_vni: True # Unique L3 vni in each direction (!)
+  #   evpn.prefix_routes_only: True
+  #   loopback: True # !! Need a loopback in the VRF for gateway mac. This also sets af.ipv4: True
+  #   import: [ internet ]
+  #   export: [ internet_hub ]
 
   internet:
     evpn.transit_vni: True
-    evpn.prefix_routes_only: True
-    import: [ internet_hub,customer ]
-    export: [ internet ]
+    # evpn.prefix_routes_only: True
+    loopback: True # !! Need a loopback in the VRF for gateway mac
+    import: [customer]
+    export: [internet]
 
   customer:
     evpn.transit_vni: True
-    import: [customer,internet]
+    import: [internet]
     export: [customer]
 
 vlans:
@@ -62,7 +64,8 @@ vlans:
   internet:
     vni: True
     mode: route   # No irb interface -> no l2 vni possible
-    vrf: internet_hub
+    vrf: internet
+    # vrf: customer
 
 # vxlan.vlans: [ *all the above* ]
 
@@ -75,9 +78,9 @@ groups:
 
     node_data:
       vrfs:
-        internet_hub:
-          af:
-            ipv4: True
+        # internet_hub:
+        #   af:
+        #     ipv4: True
         internet:
           af:
             ipv4: True

@@ -1,0 +1,119 @@
+message: |
+ Testing minimal topology for VXLAN to FRR hosts using iBGP over eBGP with SR Linux
+
+ Use case with 1 VMs and hub-spoke vrf leaking to "Internet"
+ 
+ Control plane: EVPN with iBGP-over-eBGP
+ P2P: BGP unnumbered with RFC8950 (ipv6 next hops for ipv4 prefixes)
+
+ * vm1 can ping the Internet:                     docker exec -it clab-EVPN-VXLAN-to-hosts-vm1 ping 8.8.8.8 -c 2
+
+addressing:
+  fabric:
+    # unnumbered: true # old style based on loopback IPs
+    ipv4: true
+    ipv6: true
+
+bgp:
+  advertise_loopback: all
+  as: 65000 # iBGP AS
+  as_list:
+    65000: # EVPN overlay with Route Reflector at spine(s)
+      members: [ spine,frr-bgp-s1 ]
+      rr: [ spine ]
+  
+  # sessions: # Transport sessions to use, use defaults
+  #  ipv4: [ ibgp, ebgp ] # IBGP-v4 over EBGP-v6
+  #  ipv6: [ ebgp ]
+  activate: # Address families to activate
+    ipv4: [ ebgp ] # Only activate ipv4 over eBGP, use iBGP for EVPN only
+
+evpn.session: [ ibgp ] # default
+
+provider: clab
+
+# vrf.bgp: False # Prevent ebgp session between leaves
+
+vrfs:
+  # Hub/spoke vrfs: evpn.transit_vni set to unique value in each direction
+  #
+  internet_hub:
+    evpn.transit_vni: True # Unique L3 vni in each direction (!)
+    evpn.prefix_routes_only: True
+    import: [ internet ]
+    export: [ internet_hub ]
+
+  internet:
+    evpn.transit_vni: True
+    evpn.prefix_routes_only: True
+    import: [ internet_hub,customer ]
+    export: [ internet ]
+
+  customer:
+    evpn.transit_vni: True
+    import: [customer,internet]
+    export: [customer]
+
+vlans:
+  c1-vlan:
+    vni: True
+    vrf: customer
+
+  internet:
+    vni: True
+    mode: route   # No irb interface -> no l2 vni possible
+    vrf: internet_hub
+
+# vxlan.vlans: [ *all the above* ]
+
+groups:
+  frr_servers:
+    members: [ frr-bgp-s1 ]
+    device: frr
+    module: [ vlan,vxlan,bgp,evpn,vrf ]
+    # config: [ frr-allowas-in.j2,frr-no-readvertise.j2 ]
+
+    node_data:
+      vrfs:
+        internet_hub:
+          af:
+            ipv4: True
+        internet:
+          af:
+            ipv4: True
+
+  hosts:
+    members: [ vm1 ]
+    device: linux
+    module: []
+
+  fabric:
+    members: [ spine ]
+    device: srlinux
+    module: [ vlan,vxlan,bgp,evpn,vrf ]
+
+nodes:
+  # Customer 1&2 Virtual Machines
+  vm1:
+
+  spine:
+    bgp.local_as: 65100
+    clab:
+      type: ixrd3 # 32x100G ports
+
+  frr-bgp-s1:
+    bgp.local_as: 65103 # Cannot be same as overlay, else AS loop
+
+links:
+- vm1:
+  frr-bgp-s1:
+    vlan.access: c1-vlan
+
+- frr-bgp-s1:
+  spine:
+  role: fabric
+
+- spine:
+   ipv4: 8.8.8.8/32 # Cannot do /32 on irb interface
+  type: stub
+  vlan.access: internet

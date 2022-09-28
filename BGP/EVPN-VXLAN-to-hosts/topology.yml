@@ -40,22 +40,21 @@ bgp:
     ipv4: [ ebgp ] # Only activate ipv4 over eBGP, use iBGP for EVPN only
 
 evpn.session: [ ibgp ] # default
-evpn.enforce_unique_transit_vni: False # Allow hub/spoke vrfs to have same VNI
 
 provider: clab
 
-# vrf.bgp: False # Prevent ebgp session between leaves
+# vrf.bgp: False # Prevent ebgp session between leaves inside vrfs
 
 vrfs:
   # Hub/spoke vrfs: evpn.transit_vni set to the same value on both spine and FRR nodes
   #
   internet_hub:
-    evpn.transit_vni: 200000 # Must use same L3 vni in each direction
+    evpn.transit_vni: True          # Must use same L3 vni in each direction
     import: [ internet ]
     export: [ internet_hub ]
 
   internet:
-    evpn.transit_vni: 200000
+    evpn.transit_vni: internet_hub  # Use same auto-generated VNI
     import: [ internet_hub,customer1,customer2,customer3 ]
     export: [ internet ]
 

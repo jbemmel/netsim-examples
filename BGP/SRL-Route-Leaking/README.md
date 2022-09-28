@@ -8,9 +8,9 @@ This sample topology illustrates VRF route leaking using SR Linux, using physica
 
 ## Status
 
-The topology uses a tool called Netsim, it can be launched as follows:
+The topology uses a tool called Netlab, it can be launched as follows:
 ```
-netsim up
+netlab up
 ```
 
 ## TODO

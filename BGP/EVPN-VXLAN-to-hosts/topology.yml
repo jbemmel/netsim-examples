@@ -16,14 +16,19 @@ message: |
  * vm3 can ping Customer 3 servers like vm5:      docker exec -it clab-EVPN-VXLAN-to-hosts-vm3 ping 172.16.2.5 -c 2
  * ... and on SR Linux leaves bm1:                docker exec -it clab-EVPN-VXLAN-to-hosts-vm3 ping 172.16.2.6 -c 2
 
- Note that pinging a host that has been silent may not work immediately. c3-vlan would normally have an anycast gateway address 
+ Note that pinging a host that has been silent may not work immediately. c3-vlan would normally have an anycast gateway address
  (because it is distributed over multiple nodes) and hence ARP for bm1 would work. As it is, this is not the case
 
 addressing:
   fabric:
-    # unnumbered: true # old style based on loopback IPs
     ipv4: true
     ipv6: true
+
+  srl_customer_subnets:
+    ipv4: 172.16.0.0/16
+    ipv6: 2001:dc01::/48
+    prefix: 24
+    anycast_gateway: True # Last IP of each subnet, i.e. .254
 
 bgp:
   advertise_loopback: all
@@ -32,7 +37,7 @@ bgp:
     65000: # EVPN overlay with Route Reflector at spine(s)
       members: [ leaf1,leaf2,spine,frr-bgp-s1,frr-bgp-s2 ]
       rr: [ spine ]
-  
+
   # sessions: # Transport sessions to use, use defaults
   #  ipv4: [ ibgp, ebgp ] # IBGP-v4 over EBGP-v6
   #  ipv6: [ ebgp ]
@@ -62,7 +67,7 @@ vrfs:
     evpn.transit_vni: True
     import: [customer1,internet]
     export: [customer1]
-  
+
   customer2:
     evpn.transit_vni: True
     import: [customer2,internet,customer3]
@@ -85,6 +90,7 @@ vlans:
   c3-vlan:
     vni: True
     vrf: customer3
+    pool: srl_customer_subnets
 
   internet:
     vni: True
@@ -167,6 +173,7 @@ links:
 
 - vm5:
   frr-bgp-s2:
+    anycast_gateway: False
     vlan.access: c3-vlan # Test: pull in vlan
 
 - bm1:

@@ -4,7 +4,8 @@ message: |
   Hosts are in three VLANs, all in one VRF.
   The *proxy-arp* plugin is enabled to add proxy ARP functionality
 
-  All hosts should be able to ping each other.
+  All hosts should be able to ping each other, e.g.
+  ```docker exec -it clab-NextLevel-h2 ping 172.16.0.1```
 
 provider: clab
 

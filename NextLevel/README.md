@@ -17,4 +17,4 @@ netlab up
 
 * S1/S2: SR Linux nodes with symmetric IRB EVPN/VXLAN and proxy ARP; iBGP over ISIS IGP
 * C1/C2: SR OS nodes with SRv6 over ISIS; no BGP
-* PE1/PE2: L2 MPLS EVPN over LDP, OSPF IGP
+* PE1/PE2: SR OS nodes with L2 MPLS EVPN over LDP; OSPF IGP

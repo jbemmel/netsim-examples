@@ -29,12 +29,12 @@ netlab -s nodes.s2.device=frr up
 ### Comprehensive topology validation ✅
 
 ```
-jeroen@jvm:~/srlinux/netsim-examples/NextLevel$ docker exec -it clab-NextLevel-h2 ping 172.16.0.1 -c2
-PING 172.16.0.1 (172.16.0.1): 56 data bytes
-64 bytes from 172.16.0.1: seq=0 ttl=62 time=9.713 ms
-64 bytes from 172.16.0.1: seq=1 ttl=62 time=4.950 ms
+jeroen@jvm:~/srlinux/netsim-examples/NextLevel$ docker exec -it clab-NextLevel-h2 ping 192.168.0.1 -c2
+PING 192.168.0.1 (192.168.0.1): 56 data bytes
+64 bytes from 192.168.0.1: seq=0 ttl=62 time=9.713 ms
+64 bytes from 192.168.0.1: seq=1 ttl=62 time=4.950 ms
 
---- 172.16.0.1 ping statistics ---
+--- 192.168.0.1 ping statistics ---
 2 packets transmitted, 2 packets received, 0% packet loss
 round-trip min/avg/max = 4.950/7.331/9.713 ms
 ```

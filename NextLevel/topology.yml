@@ -2,10 +2,11 @@ message: |
   The devices under test are layer-3 switches running VXLAN/EVPN with
   symmetric IRB over a SRv6/ISIS edge over a MPLS BGP-Free core.
   Hosts are in three VLANs, all in one VRF.
-  The *proxy-arp* plugin is enabled to add proxy ARP functionality
+  The *proxy-arp* plugin is enabled to add proxy ARP functionality, and
+  dual-stack anycast gateways are provisioned in the 'redhot' VLAN
 
   All hosts should be able to ping each other, e.g.
-  docker exec -it clab-NextLevel-h2 ping 172.16.0.1
+  docker exec -it clab-NextLevel-h2 ping 192.168.0.1
 
 provider: clab
 
@@ -47,9 +48,16 @@ addressing:
     prefix: 31
     ipv6: True # ipv6 lla
 
+  dualstack-tenants:
+    ipv4: 192.168.0.0/16
+    prefix: 24
+    ipv6: 2001:192:168::/48
+    anycast_gateway: True  # Default: last of every ipv4/ipv6 subnet
+
 vlans:
-  red:
+  red-hot:
     vrf: tenant
+    pool: dualstack-tenants
   blue:
     vrf: tenant
   green:
@@ -79,10 +87,10 @@ nodes:
 links:
 - h1:
   s1:
-    vlan.access: red
+    vlan.access: red-hot
 - h2:
   s2:
-    vlan.access: red
+    vlan.access: red-hot
 - h3:
   s1:
     vlan.access: blue

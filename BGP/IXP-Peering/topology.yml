@@ -6,9 +6,13 @@ plugin: [ peeringdb ]
 
 defaults.device: sros
 
+addressing:
+  lan:
+    ipv6: True
+
 nodes:
   AMS-IX: # For valid AS at AMS-IX see https://www.ams-ix.net/ams/connected-networks
-    bgp.as: 65000
+    bgp.as: 65000 # deleted by plugin
     ixp: True
 
   r1:
@@ -18,7 +22,6 @@ nodes:
     bgp.as: 13414 # Twitter
 
 links:
-- r1:
-  AMS-IX:
-- r2:
-  AMS-IX:
+- AMS-IX:
+  r1:
+  r2:

@@ -1,0 +1,24 @@
+module: [ bgp ]
+
+provider: clab
+
+plugin: [ peeringdb ]
+
+defaults.device: sros
+
+nodes:
+  AMS-IX: # For valid AS at AMS-IX see https://www.ams-ix.net/ams/connected-networks
+    bgp.as: 65000
+    ixp: True
+
+  r1:
+    bgp.as: 12552 # Global Connect
+
+  r2:
+    bgp.as: 13414 # Twitter
+
+links:
+- r1:
+  AMS-IX:
+- r2:
+  AMS-IX:

@@ -17,6 +17,17 @@ netlab up
 
 The procedure to add a customer VRF on a leaf involves the following items:
 * Create new IP VRF
-* Create and add new routed VXLAN interface with a L3 transit VNI
-* Create BGP peering between global VRF and customer VRF
- + Allocate VLAN on loop interfaces ethernet-1/{51,52}
+    * Enable IPv4 forwarding for BGP unnumbered
+    * Assign BGP-EVPN EVI
+* Create and add new routed VXLAN interface
+    * Assign a L3 transit VNI
+* Create eBGP peering between global VRF and customer VRF
+    * Allocate VLAN tag on loop interfaces ethernet-1/{51,52}
+    * Assign/use customer specific AS
+    * Customer specific import/export policy with prefix list
+
+For simplicity of provisioning, the various parameters could be allocated as follows:
+1. Customer specific **ID**
+2. VLAN tag: **ID**
+3. Customer AS: <base-AS> (e.g. 65000) + **ID**
+4. L3 transit VNI/EVPN EVI: same as **customer AS**

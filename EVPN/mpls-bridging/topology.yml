@@ -10,9 +10,10 @@ bgp.as: 65000
 vlans:
   tenant:
     mode: bridge
-    evpn: # JvB: enable EVPN, should add EVI
+    evpn: # JvB: enable EVPN, this should add EVI
       transport: mpls # default: vxlan
-# mpls.vlans: [ tenant ]
+
+evpn.vlans: [ tenant ] # Currently not set automatically
 
 groups:
   hosts:

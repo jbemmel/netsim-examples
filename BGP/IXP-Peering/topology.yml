@@ -4,24 +4,30 @@ provider: clab
 
 plugin: [ peeringdb ]
 
-defaults.device: sros
+defaults.device: srlinux
 
 addressing:
   lan:
     ipv6: True
 
 nodes:
-  AMS-IX: # For valid AS at AMS-IX see https://www.ams-ix.net/ams/connected-networks
-    bgp.as: 65000 # deleted by plugin
-    ixp: True
+#  AMS-IX: # For valid AS at AMS-IX see https://www.ams-ix.net/ams/connected-networks
+#    bgp.as: 65000 # deleted by plugin
+#    ixp: True
 
-  r1:
-    bgp.as: 12552 # Global Connect
+  DE-CIX: # Multiple locations
+    bgp.as: 65001
+    ixp: "DE-CIX Frankfurt"
+    ospf.reference_bandwidth: 800000 # Mbps = 800G links
 
-  r2:
-    bgp.as: 13414 # Twitter
+  GlobalConnect:
+    bgp.as: 12552 # Global Connect AS
+    device: sros
+
+  Twitter:
+    bgp.as: 13414 # Twitter AS
 
 links:
-- AMS-IX:
-  r1:
-  r2:
+- DE-CIX:
+  GlobalConnect:
+  Twitter:

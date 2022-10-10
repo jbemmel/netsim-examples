@@ -4,20 +4,21 @@
 import typing, requests, json, netaddr
 from box import Box
 from netsim import data
+from urllib.parse import quote
 
 """
 Lookup ASN in PeeringDB and return ipv4,ipv6 peering IPs at given IX
 """
-def query_peeringdb(asn: int, ix: str) -> typing.Tuple[typing.Optional[str],typing.Optional[str]]:
-  url = f"https://peeringdb.com/api/netixlan?asn={asn}&name={ix}"
+def query_peeringdb(asn: int, ix: str) -> typing.Tuple[typing.Optional[str],typing.Optional[str],typing.Optional[str]]:
+  url = f"https://peeringdb.com/api/netixlan?asn={asn}&name__contains={quote(ix)}"
   print( f"PeeringDB query: {url}" )
   resp = requests.get(url=url)
   pdb_json = json.loads(resp.text)
   print( pdb_json )
   if 'data' in pdb_json and pdb_json['data']:
     site = pdb_json['data'][0]
-    return ( site['ipaddr4'], site['ipaddr6'] )
-  return ( None, None )
+    return ( site['name'], site['ipaddr4'], site['ipaddr6'] )
+  return ( None, None, None )
 
 """
 Update eBGP peering IP addresses at given IXP site
@@ -36,32 +37,36 @@ def post_transform(topology: Box) -> None:
         ndata.interfaces[i.ifindex-1][ipv] = f"{ixp_ip}/{prefix}"
         for nb in ndata.interfaces[i.ifindex-1].neighbors:
           peer = topology.nodes[ nb.node ]
-          intf = [ l for l in peer.interfaces if l.ifname == nb.ifname ]
-          if intf:
-            intf[0][ipv] = f"{ip}/{prefix}"
+          if peer.bgp['as'] == i['as']:
+            for p in peer.interfaces:
+              if n in [ x.node for x in p.neighbors ]:
+                p[ipv] = f"{ip}/{prefix}"
+                return
 
       if 'ixp' in ndata:
-        (ip4,ip6) = query_peeringdb( i['as'], n )
+        (name,ip4,ip6) = query_peeringdb( i['as'], ndata.ixp )
+        if name:
+          ndata.interfaces[i.ifindex-1].name = name
         if ip4 and 'ipv4' in ndata.af:
           update_ips(ip4,22,'ipv4')    # Assume /22 is large enough
         if ip6 and 'ipv6' in ndata.af:
           update_ips(ip6,64,'ipv6')
 
         ndata.pop('bgp',None) # Remove BGP peerings from IXP node
+        ndata.module = []
       else:
         # Assumes IXP nodes are listed first...update peering IPs
         peer = topology.nodes[ i.name ]
         if 'ixp' in peer:
           continue
         for l in peer.interfaces:
-          print(l)
-          if l.ifname == ndata.interfaces[ i.ifindex-1 ].ifname:
+          if n in [ nb.node for nb in l.neighbors ]:
             print( f"Found peering interface {l}" )
-            if 'ipv4' in l and 'ipv4' in i:
-              i.ipv4 = l.ipv4
-            if 'ipv6' in l and 'ipv6' in i:
-              i.ipv6 = l.ipv6
-            updated_neighbors = [ i ]  # Keep only this one
+            if 'ipv4' in l and 'ipv4' in i and isinstance(l.ipv4,str):
+              i.ipv4 = l.ipv4.split('/')[0]
+            if 'ipv6' in l and 'ipv6' in i and isinstance(l.ipv6,str):
+              i.ipv6 = l.ipv6.split('/')[0]
+            updated_neighbors.append(i)     # Keep only updated ones, remove ixp
 
     if updated_neighbors:
       ndata.bgp.neighbors = updated_neighbors

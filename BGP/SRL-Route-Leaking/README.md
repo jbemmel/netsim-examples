@@ -29,5 +29,5 @@ The procedure to add a customer VRF on a leaf involves the following items:
 For simplicity of provisioning, the various parameters could be allocated as follows:
 1. Customer specific **ID**
 2. VLAN tag: **ID**
-3. Customer AS: <base-AS> (e.g. 65000) + **ID**
+3. Customer AS: \<base-AS\> (e.g. 65000) + **ID**
 4. L3 transit VNI/EVPN EVI: same as **customer AS**

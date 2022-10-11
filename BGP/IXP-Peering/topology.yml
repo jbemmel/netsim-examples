@@ -1,4 +1,4 @@
-module: [ bgp ]
+module: [ bgp, vrf ]
 
 provider: clab
 
@@ -9,6 +9,9 @@ defaults.device: srlinux
 addressing:
   lan:
     ipv6: True
+
+vrfs:
+  test:
 
 nodes:
 #  AMS-IX: # For valid AS at AMS-IX see https://www.ams-ix.net/ams/connected-networks
@@ -31,3 +34,8 @@ links:
 - DE-CIX:
   GlobalConnect:
   Twitter:
+
+# Add a direct link with in-vrf peering
+- GlobalConnect:
+  Twitter:
+  vrf: test

@@ -29,6 +29,7 @@ def post_transform(topology: Box) -> None:
   for n, ndata in topology.nodes.items():
     print( f"Processing {n} bgp.neighbors" )
     updated_neighbors = []
+    ixp_node = None
     for i in ndata.bgp.neighbors:
       print(i)
       def update_ips(ip,prefix,ipv):
@@ -58,10 +59,11 @@ def post_transform(topology: Box) -> None:
         # Assumes IXP nodes are listed first...update peering IPs
         peer = topology.nodes[ i.name ]
         if 'ixp' in peer:
+          ixp_node = i.name
           continue
         for l in peer.interfaces:
-          if n in [ nb.node for nb in l.neighbors ]:
-            print( f"Found peering interface {l}" )
+          if ixp_node in [ nb.node for nb in l.neighbors ]:
+            print( f"Found peering interface with node {ixp_node}: {l}" )
             if 'ipv4' in l and 'ipv4' in i and isinstance(l.ipv4,str):
               i.ipv4 = l.ipv4.split('/')[0]
             if 'ipv6' in l and 'ipv6' in i and isinstance(l.ipv6,str):

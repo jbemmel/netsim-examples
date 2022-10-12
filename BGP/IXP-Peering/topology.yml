@@ -25,15 +25,22 @@ nodes:
 
   GlobalConnect:
     bgp.as: 12552 # Global Connect AS
+    bgp.originate: [ 194.19.50.0/24, 2001:194:19:50::/64 ]
     device: sros
+    clab.type: sr-14s
 
   Twitter:
     bgp.as: 13414 # Twitter AS
+    bgp.originate: [ 104.244.42.0/24, 2001:104:244:42::/64 ]
+
+  Apple:
+    bgp.as: 714
 
 links:
 - DE-CIX:
   GlobalConnect:
   Twitter:
+  Apple:
 
 # Add a direct link with in-vrf peering
 - GlobalConnect:

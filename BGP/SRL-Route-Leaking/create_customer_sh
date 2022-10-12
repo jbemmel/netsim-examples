@@ -38,19 +38,24 @@ exit
 vlan encap single-tagged vlan-id ${ID}
 
 /network-instance ${NAME}
-description "Test ${ID}"
+description "Customer ${ID} AS ${CUSTOMER_AS}"
 type ip-vrf
 interface ${CUSTOMER_PORT}.${ID}
 exit
 protocols bgp
-autonomous-system ${CUSTOMER_AS}
-router-id ${/network-instance[name=global]/protocols/bgp/router-id}
+autonomous-system 65000
+router-id \${/network-instance[name=global]/protocols/bgp/router-id}
 group ebgp-unnumbered-${CUSTOMER_AS}
+ local-as ${CUSTOMER_AS} prepend-global-as false
+ ipv4-unicast admin-state enable advertise-ipv6-next-hops true receive-ipv6-next-hops true
 exit
-dynamic-neighbors interface ${CUSTOMER_PORT}.${ID} peer-group ebgp-unnumbered-${CUSTOMER_AS} allowed-peer-as [65001..65001]
+dynamic-neighbors interface ${CUSTOMER_PORT}.${ID} peer-group ebgp-unnumbered-${CUSTOMER_AS} allowed-peer-as [65001]
 
 /network-instance global
 interface ${GLOBAL_PORT}.${ID}
+exit
+protocols bgp
+dynamic-neighbors interface ${GLOBAL_PORT}.${ID} peer-group ebgp-unnumbered-65001 allowed-peer-as [${CUSTOMER_AS}]
 
 EOF
 

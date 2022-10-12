@@ -1,0 +1,2 @@
+[alias]
+"create customer {name}" = "bash ~/create_customer.sh {name}"

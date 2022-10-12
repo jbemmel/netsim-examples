@@ -1,0 +1,57 @@
+#!/bin/bash
+
+#
+# environment alias "create customer {name}" "bash ~/create_customer.sh {name}"
+#
+
+# Constants
+GLOBAL_PORT="ethernet-1/51"
+CUSTOMER_PORT="ethernet-1/52"
+
+NAME="${1}"
+
+LAST=`sr_cli "show /interface ${GLOBAL_PORT}"`
+regex='.*[.]([0-9]+) is .*'
+[[ $LAST =~ $regex ]]
+ID="$((${BASH_REMATCH[1]}+1))"
+
+CUSTOMER_AS=$((60000+${ID}))
+
+sr_cli --candidate-mode --commit-at-end --echo --debug << EOF
+
+/interface ${GLOBAL_PORT} subinterface ${ID}
+type routed
+description "Customer ${NAME} - global vrf"
+ipv6
+ neighbor-discovery learn-unsolicited link-local
+ router-advertisement router-role admin-state enable max-advertisement-interval 5 min-advertisement-interval 4
+exit
+vlan encap single-tagged vlan-id ${ID}
+
+/interface ${CUSTOMER_PORT} subinterface ${ID}
+type routed
+description "Customer ${NAME} - customer vrf"
+ipv6
+ neighbor-discovery learn-unsolicited link-local
+ router-advertisement router-role admin-state enable max-advertisement-interval 5 min-advertisement-interval 4
+exit
+vlan encap single-tagged vlan-id ${ID}
+
+/network-instance ${NAME}
+description "Test ${ID}"
+type ip-vrf
+interface ${CUSTOMER_PORT}.${ID}
+exit
+protocols bgp
+autonomous-system ${CUSTOMER_AS}
+router-id ${/network-instance[name=global]/protocols/bgp/router-id}
+group ebgp-unnumbered-${CUSTOMER_AS}
+exit
+dynamic-neighbors interface ${CUSTOMER_PORT}.${ID} peer-group ebgp-unnumbered-${CUSTOMER_AS} allowed-peer-as [65001..65001]
+
+/network-instance global
+interface ${GLOBAL_PORT}.${ID}
+
+EOF
+
+exit $?

@@ -1,5 +1,5 @@
 message: |
-  The devices under test are SR Linux spines and leaves, performing VRF route leaking on the latter using a physical loop link. 
+  The devices under test are SR Linux spines and leaves, performing VRF route leaking on the latter using a physical loop link.
 
   Control plane: EVPN with iBGP-over-eBGP
   P2P: BGP unnumbered with RFC8950 (ipv6 next hops for ipv4 prefixes)
@@ -18,9 +18,9 @@ plugin: [ topology-data ]
 defaults:
  device: srlinux
  devices:
-  srlinux.image: ghcr.io/nokia/srlinux:22.6.3
+  srlinux.image: ghcr.io/nokia/srlinux:latest # custom srl base image
  topology-data: [ vlans, vrfs ]
- 
+
 addressing:
   loopback:
     ipv4: 10.0.0.0/24
@@ -99,7 +99,7 @@ vrfs:
     import: [customer3,global,customer2]
     export: [customer3]
 
-vlans:       # All have mode:irb 
+vlans:       # All have mode:irb
   v2001:
     id: 2001
     vrf: customer1
@@ -156,6 +156,10 @@ groups:
     device: srlinux
     module: [ bgp,evpn,vlan,vrf,vxlan ]
     config: [ leaf-policy.j2 ]
+    node_data:
+     clab.binds:
+      create_customer_sh: /home/admin/create_customer.sh
+      aliases_srlinuxrc: /home/admin/.srlinuxrc
 
     # Could also only define these here, and not globally, but then consistency may be lost (ip prefixes)
     # node_data:

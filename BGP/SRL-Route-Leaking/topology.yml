@@ -148,7 +148,7 @@ groups:
     config: [ spine-policy.j2 ]
     node_data:
      clab:
-      type: ixrd3 # TODO ixrh3 (TD3) - pure IP spine, no VXLAN
+      type: ixrd3
      bgp.rr_cluster_id: False # Use unique cluster id for each spine
 
   leaves:
@@ -175,8 +175,10 @@ groups:
 
   mpls:
     members: [ mplsnet ]
-    # device: srlinux
-    device: sros
+    device: srlinux
+    node_data:
+      clab.type: ixrh2    # ixrh2 (TD3) - pure IP spine, no VXLAN
+    # device: sros
     module: [ bgp, vrf ]  # Pure eBGP, need vrf to set correct communities on exported prefixes
 
   hosts:

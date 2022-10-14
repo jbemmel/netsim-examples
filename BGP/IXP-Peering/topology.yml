@@ -21,7 +21,7 @@ nodes:
   DE-CIX: # Multiple locations
     bgp.as: 65001
     ixp: "DE-CIX Frankfurt"
-    ospf.reference_bandwidth: 800000 # Mbps = 800G links
+    # ospf.reference_bandwidth: 800000 # Mbps = 800G links
 
   GlobalConnect:
     bgp.as: 12552 # Global Connect AS

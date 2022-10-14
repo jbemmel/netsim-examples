@@ -7,6 +7,12 @@ from netsim import data
 from urllib.parse import quote
 
 """
+Adds a custom 'ixp' node attribute
+"""
+def init(topology: Box) -> None:
+  topology.defaults.attributes.node.append('ixp')
+
+"""
 Lookup ASN in PeeringDB and return ipv4,ipv6 peering IPs at given IX
 """
 def query_peeringdb(asn: int, ix: str) -> typing.Tuple[typing.Optional[str],typing.Optional[str],typing.Optional[str]]:

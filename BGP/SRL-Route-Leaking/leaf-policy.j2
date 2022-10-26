@@ -19,7 +19,7 @@ updates:
 
 {% for vname,vdata in vrfs.items() if vname!='global' %}
 - path: routing-policy/policy[name={{vname}}_ebgp_export_new]
-  val:  
+  val:
    default-action:
     accept:
      bgp:
@@ -28,7 +28,7 @@ updates:
 
 - path: routing-policy/policy[name={{vname}}_ebgp_import_new]
   val:
-   default-action: 
+   default-action:
     reject: { }
    statement:
 {%  for c in vdata.import|default([]) %}
@@ -59,7 +59,7 @@ updates:
    default-action:
     accept:
       bgp:
-       local-preference: 
+       local-preference:
         set: 99  # Reduced from default 100
 
 - path: network-instance[name=global]/protocols/bgp

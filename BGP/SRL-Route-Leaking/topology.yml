@@ -103,18 +103,22 @@ vlans:       # All have mode:irb
   v2001:
     id: 2001
     vrf: customer1
+    bgp: False
 
   v2002:
     id: 2002
     vrf: customer1
+    bgp: False
 
   v3001:
     id: 3001
     vrf: customer2
+    bgp: False
 
   v3010:
     id: 3010
     vrf: customer3
+    bgp: False
 
   # Route leaking vlans
   route-leak-to-global-customer1:
@@ -212,6 +216,7 @@ nodes:
 
   leaf2:
     bgp.local_as: 65002
+    vxlan.vlans: [ v3010 ]
 
   mplsnet: # Emulates MPLS network
     bgp.as: 65100
@@ -300,7 +305,7 @@ links:
   - node: leaf1
     ifindex: 51  # 100G port
     name: Global side
-    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2,route-leak-to-global-customer3]
     vlan.trunk:
       route-leak-to-global-customer1:
         vrf: global
@@ -308,13 +313,13 @@ links:
       route-leak-to-global-customer2:
         vrf: global
         # bgp.local_as: 65001
-      # route-leak-to-global-customer3:  # Not needed, only on leaf2
-      #  vrf: global
+      route-leak-to-global-customer3:
+        vrf: global
 
   - node: leaf1
     ifindex: 52
     name: Customer side
-    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2]
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2,route-leak-to-global-customer3]
     vlan.trunk:
       route-leak-to-global-customer1:
         vrf: customer1
@@ -322,9 +327,9 @@ links:
       route-leak-to-global-customer2:
         vrf: customer2
         bgp.local_as: 65222
-      # route-leak-to-global-customer3:
-      #  vrf: customer3
-      #  bgp.local_as: 65333
+      route-leak-to-global-customer3:
+        vrf: customer3
+        bgp.local_as: 65333
 
 # leaf2 looped link (could be a link template)
 - interfaces:

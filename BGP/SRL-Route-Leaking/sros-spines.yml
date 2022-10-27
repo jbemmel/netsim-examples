@@ -1,0 +1,351 @@
+message: |
+  The devices under test are SR Linux leaves and SR OS spines, performing VRF route leaking on the leaves using a physical loop link
+  and using asymmetric VNIs on the spines
+
+  Control plane: EVPN with iBGP-over-eBGP
+  P2P: eBGP IPv4 (not BGP unnumbered)
+
+  * h1 and h2 (customer 1) should be able to ping each other:   docker exec -it clab-SRL-Route-Leaking-h1 ping 172.16.1.2 -c 2
+  * All nodes should be able to reach the Internet:             docker exec -it clab-SRL-Route-Leaking-h1 ping 8.8.8.8
+  * h3 and h4 (customer 2/3) should be able to ping each other: docker exec -it clab-SRL-Route-Leaking-h3 ping 172.16.3.4 -c 2
+  * h1 should not be able to reach h3 or h4    :                docker exec -it clab-SRL-Route-Leaking-h1 ping 172.16.3.4 -c 2
+
+  To see routing policies: docker exec -it clab-SRL-Route-Leaking-leaf1 sr_cli "info /routing-policy policy customer1_ebgp_import_new"
+
+provider: clab
+
+plugin: [ topology-data ]
+
+defaults:
+ device: srlinux
+ devices:
+  srlinux.image: ghcr.io/nokia/srlinux:latest # custom srl base image
+ topology-data: [ vlans, vrfs ]
+
+addressing:
+  loopback:
+    ipv4: 10.0.0.0/24
+    ipv6: False
+  router_id:
+    ipv4: 10.0.0.0/24
+    prefix: 32
+  p2p:
+    ipv4: 10.1.0.0/16
+    prefix: 31 # Change default /30 for interface links
+
+  # lan:
+  #  # unnumbered: True
+  #  ipv6: True  # Unnumbered
+  #  ipv4: True
+
+  to-external:
+    ipv4: 192.0.0.0/28
+    prefix: 31
+
+  bgp-unnumbered:
+    # unnumbered: True
+    ipv6: True  # Unnumbered
+    ipv4: True
+
+  wan:
+    ipv4: 8.8.0.0/16  # To get static routes provisioned in hosts
+
+evpn.as: 65000 # iBGP AS
+
+bgp:
+  advertise_loopback: all
+  as_list:
+    65000: # EVPN overlay with Route Reflectors at spines
+      members: [ leaf1,leaf2,spine1,spine2 ]
+      rr: [ spine1,spine2 ]
+
+    # eBGP underlay is created using bgp.local_as attributes below
+
+  activate: # Address families to activate
+    ipv4: [ ebgp ] # Only activate ipv4 over eBGP, use iBGP for EVPN only
+
+#
+# Illustrates 2 use cases:
+# 1. All customer routes are leaked to a global VRF
+# 2. Some customers can be allowed to leak amongst each other
+#
+vrfs:
+  global: # Global VRF
+    evpn.transit_vni: 11111 # Use symmetric IRB with RT5 EVPN prefixes
+
+    # Carefully ordered, else conflicts with EVPN
+    import: [global,customer1,customer2]
+    export: [global]
+
+    loopback: True # For testing purposes
+
+  customer1:
+    as: 65111
+    evpn.transit_vni: 5111
+
+    import: [customer1,global]
+    export: [customer1]
+
+  customer2:
+    as: 65222
+    evpn.transit_vni: 5222
+
+    import: [customer2,global,customer3]  # add leaking with customer3
+    export: [customer2]
+
+  customer3:
+    as: 65333
+    evpn.transit_vni: 5333
+
+    import: [customer3,global,customer2]
+    export: [customer3]
+
+vlans:       # All have mode:irb
+  v2001:
+    id: 2001
+    vrf: customer1
+    bgp: False
+
+  v2002:
+    id: 2002
+    vrf: customer1
+    bgp: False
+
+  v3001:
+    id: 3001
+    vrf: customer2
+    bgp: False
+
+  v3010:
+    id: 3010
+    vrf: customer3
+    bgp: False
+
+  # Route leaking vlans
+  route-leak-to-global-customer1:
+    id: 4001
+    mode: route
+    pool: bgp-unnumbered
+
+  route-leak-to-global-customer2:
+    id: 4002
+    mode: route
+    pool: bgp-unnumbered
+
+  route-leak-to-global-customer3:
+    id: 4003
+    mode: route
+    pool: bgp-unnumbered
+
+  # Global vlan only used to generate prefix list + communities
+  global:
+    vrf: global
+    prefix: 8.8.8.8/32
+
+# By default, all global vlans are assigned a VNI
+vxlan.vlans: [ v2001, v2002, v3001, v3010 ]
+
+groups:
+  spines:
+    members: [ spine1,spine2 ]
+    device: sros # Changed from srlinux
+    module: [ bgp,evpn,vlan,vrf,vxlan ]
+    # config: [ spine-policy.j2 ] TODO
+    node_data:
+     bgp.rr_cluster_id: False # Use unique cluster id for each spine
+     vxlan.vlans: []          # No L2 VLANs on the spines
+
+  leaves:
+    members: [ leaf1,leaf2 ]
+    device: srlinux
+    module: [ bgp,evpn,vlan,vrf,vxlan ]
+    config: [ leaf-policy.j2 ]
+    node_data:
+     clab.binds:
+      create_customer_sh: /home/admin/create_customer.sh
+      aliases_srlinuxrc: /home/admin/.srlinuxrc
+
+  mpls:
+    members: [ mplsnet ]
+    device: srlinux
+    node_data:
+      clab.type: ixrh2    # ixrh2 (TD3) - pure IP spine, no VXLAN
+    # device: sros
+    module: [ bgp ]  # Pure eBGP, need vrf to set correct communities on exported prefixes
+
+  hosts:
+    members: [ h1,h2,h3,h4,h5 ]
+    device: linux
+    module: []
+
+nodes:
+  # Customer 1
+  h1:
+  h2:
+
+  # Customer 2
+  h3:
+
+  # Customer 3
+  h4:
+  h5:
+
+  spine1:
+    # device: sros
+    bgp.local_as: 65010 # Cannot be 65000, AS path will block routes
+    # bgp.originate: [ 10.0.0.0/24 ] # For loopback routing from hosts -> breaks failover
+
+  spine2:
+    # device: sros
+    bgp.local_as: 65010
+
+  leaf1:
+    bgp.local_as: 65001
+
+  leaf2:
+    bgp.local_as: 65002
+    vxlan.vlans: [ v3010 ]
+
+  mplsnet: # Emulates MPLS network
+    bgp.as: 65100
+    # bgp.advertise_loopback: False
+
+links:
+# Host h1 dual connected, TODO LACP
+- leaf1:
+    vlan.access: v2001
+  h1:
+
+# - leaf2:
+#     vlan.access: v2001
+#   h1:
+
+- leaf1:
+    vlan.access: v2002
+  h2:
+
+# - leaf2:
+#     vlan.access: v2002
+#   h2:
+
+# Customer 2 host
+- leaf1:
+    vlan.access: v3001
+  h3:
+
+# - leaf2:
+#     vlan.access: v3001
+#   h3:
+
+# Customer 3 hosts - same vlan
+- leaf1:
+    vlan.access: v3010
+  h4:
+
+- leaf2:
+    vlan.access: v3010
+  h5:
+
+- leaf1:
+   ifindex: 49
+  spine1:
+
+- leaf1:
+   ifindex: 50
+  spine2:
+
+- leaf2:
+   ifindex: 49
+  spine1:
+
+- leaf2:
+   ifindex: 50
+  spine2:
+
+- spine1:
+    vrf: global
+  mplsnet:
+  role: to-external
+
+- spine2:
+    vrf: global
+  mplsnet:
+  role: to-external
+
+# See https://blog.ipspace.net/2018/06/avoid-summarization-in-leaf-and-spine.html
+- spine1:
+   bgp.local_as: 65011 # Build eBGP peering between spines
+  spine2:
+   bgp.local_as: 65012
+
+# Stub link for internet
+- mplsnet:
+    ipv4: 8.8.8.8/32
+  type: stub # 'loopback'
+  # vrf: global
+  # vlan.access: MPLS does not use vlan module
+  # bgp.advertise: True stub is advertised by default
+
+#
+# Route leaking using looped interface on each leaf, eBGP peering and rfc8950 ipv6 next hops with ipv4 prefixes
+#
+- interfaces:
+  - node: leaf1
+    ifindex: 51  # 100G port
+    name: Global side
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2,route-leak-to-global-customer3]
+    vlan.trunk:
+      route-leak-to-global-customer1:
+        vrf: global
+        # bgp.local_as: 65001 (uses node AS)
+      route-leak-to-global-customer2:
+        vrf: global
+        # bgp.local_as: 65001
+      route-leak-to-global-customer3:
+        vrf: global
+
+  - node: leaf1
+    ifindex: 52
+    name: Customer side
+    vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2,route-leak-to-global-customer3]
+    vlan.trunk:
+      route-leak-to-global-customer1:
+        vrf: customer1
+        bgp.local_as: 65111 # TODO take from vrf?
+      route-leak-to-global-customer2:
+        vrf: customer2
+        bgp.local_as: 65222
+      route-leak-to-global-customer3:
+        vrf: customer3
+        bgp.local_as: 65333
+
+# leaf2 looped link (could be a link template)
+- interfaces:
+  - node: leaf2
+    ifindex: 51  # 100G port
+    name: Global side
+    vlan.trunk: [route-leak-to-global-customer3]
+    vlan.trunk:
+      # route-leak-to-global-customer1:
+      #   vrf: global
+      #   # bgp.local_as: 65001 (uses node AS)
+      # route-leak-to-global-customer2:
+      #   vrf: global
+      #   # bgp.local_as: 65001
+      route-leak-to-global-customer3:
+        vrf: global
+
+  - node: leaf2
+    ifindex: 52
+    name: Customer side
+    vlan.trunk: [route-leak-to-global-customer3]
+    vlan.trunk:
+      # route-leak-to-global-customer1:
+      #   vrf: customer1
+      #   bgp.local_as: 65111 # TODO take from vrf?
+      # route-leak-to-global-customer2:
+      #   vrf: customer2
+      #   bgp.local_as: 65222
+      route-leak-to-global-customer3:
+        vrf: customer3
+        bgp.local_as: 65333

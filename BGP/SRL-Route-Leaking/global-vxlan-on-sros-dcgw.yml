@@ -9,8 +9,8 @@ provider: clab
 defaults:
  device: srlinux
  devices:
-  srlinux.image: ghcr.io/nokia/srlinux:22.6.3
- 
+  srlinux.image: ghcr.io/nokia/srlinux:latest
+
 addressing:
   loopback:
     ipv4: 10.0.0.0/24
@@ -75,7 +75,7 @@ vrfs:
     import: [customer2,global]
     export: [customer2]
 
-vlans:       # All have mode:irb 
+vlans:       # All have mode:irb
   v2001:
     id: 2001
 

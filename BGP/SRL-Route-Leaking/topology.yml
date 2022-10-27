@@ -50,6 +50,9 @@ addressing:
     ipv6: True  # Unnumbered
     ipv4: True
 
+  wan:
+    ipv4: 8.8.0.0/16  # To get static routes provisioned in hosts
+
 bgp:
   advertise_loopback: all
   as: 65000 # iBGP AS

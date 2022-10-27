@@ -8,11 +8,13 @@ provider: clab
 vlans:
   red:
 
+bgp.as: 65000 
+
 groups:
   switch:
     members: [ s1, s2 ]
-    module: [ vxlan, vlan, ospf ]
-    device: eos
+    module: [ vxlan, vlan, ospf, evpn, bgp ]
+    # device: eos
   host:
     members: [ h1, h2 ]
     device: linux

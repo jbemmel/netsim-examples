@@ -150,7 +150,7 @@ groups:
     members: [ spine1,spine2 ]
     device: sros # Changed from srlinux
     module: [ bgp,evpn,vlan,vrf,vxlan ]
-    # config: [ spine-policy.j2 ] TODO
+    config: [ sros-spine-policy.j2 ]
     node_data:
      bgp.rr_cluster_id: False # Use unique cluster id for each spine
      vxlan.vlans: []          # No L2 VLANs on the spines

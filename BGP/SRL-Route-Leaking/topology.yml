@@ -188,7 +188,7 @@ groups:
     node_data:
       clab.type: ixrh2    # ixrh2 (TD3) - pure IP spine, no VXLAN
     # device: sros
-    module: [ bgp, vrf ]  # Pure eBGP, need vrf to set correct communities on exported prefixes
+    module: [ bgp ]  # Pure eBGP, could use vrf module to set correct communities on exported prefixes
 
   hosts:
     members: [ h1,h2,h3,h4,h5 ]
@@ -280,13 +280,13 @@ links:
   spine2:
 
 - spine1:
+   vrf: global
   mplsnet:
-  vrf: global
   role: to-external
 
 - spine2:
+   vrf: global
   mplsnet:
-  vrf: global
   role: to-external
 
 # See https://blog.ipspace.net/2018/06/avoid-summarization-in-leaf-and-spine.html
@@ -299,7 +299,7 @@ links:
 - mplsnet:
     ipv4: 8.8.8.8/32
   type: stub # 'loopback'
-  vrf: global
+  # vrf: global
   # vlan.access: MPLS does not use vlan module
   # bgp.advertise: True stub is advertised by default
 

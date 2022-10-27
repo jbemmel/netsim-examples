@@ -53,9 +53,10 @@ addressing:
   wan:
     ipv4: 8.8.0.0/16  # To get static routes provisioned in hosts
 
+evpn.as: 65000 # iBGP AS
+
 bgp:
   advertise_loopback: all
-  as: 65000 # iBGP AS
   as_list:
     65000: # EVPN overlay with Route Reflectors at spines
       members: [ leaf1,leaf2,spine1,spine2 ]
@@ -157,6 +158,7 @@ groups:
      clab:
       type: ixrd3
      bgp.rr_cluster_id: False # Use unique cluster id for each spine
+     vxlan.vlans: [] # Remove L2 vxlan vlans from spines
 
   leaves:
     members: [ leaf1,leaf2 ]

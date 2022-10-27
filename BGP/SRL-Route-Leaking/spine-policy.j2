@@ -3,7 +3,7 @@ delete:
 
 updates:
 - path: routing-policy/policy[name=global_ebgp_import_new]
-  val:  
+  val:
    default-action:
     accept:
      bgp:
@@ -13,7 +13,7 @@ updates:
 {# Only advertise EVPN routes from customers towards MPLS, not local interfaces #}
 {# Note: not quite working, mpls still seeing /31 prefixes #}
 - path: routing-policy/policy[name=global_ebgp_export_new]
-  val:  
+  val:
    default-action:
     reject: { }
    statement:
@@ -24,7 +24,7 @@ updates:
       accept: { }  # Optionally, strip all communities
 
 - path: routing-policy/policy[name=default_ibgp_export_evpn_new]
-  val:  
+  val:
    default-action:
     accept: { }
    statement:
@@ -38,10 +38,6 @@ updates:
   val:
    export-policy: global_ebgp_export_new
    import-policy: global_ebgp_import_new
-   preference:
-    ebgp: 170
-    ibgp: 171
-    _annotate_ibgp: "Prefer eBGP routes received from MPLS network over EVPN iBGP routes, to avoid looping"   
 
 {# Keep all routes in the Global VRF FIB on spines #}
 - path: network-instance[name=default]/protocols/bgp
@@ -51,3 +47,7 @@ updates:
      export-policy: default_ibgp_export_evpn_new  # Avoid advertising local /31 links, do need EVPN routes as RR
    evpn:
     keep-all-routes: True
+   preference:
+     ebgp: 170
+     ibgp: 171
+     _annotate_ibgp: "Prefer eBGP routes received from MPLS network over EVPN iBGP routes, to avoid looping"

@@ -17,7 +17,7 @@ updates:
      mask-length-range: exact
 {% endfor %}
 
-{% for vname,vdata in vrfs.items() if vname!='global' %}
+{% for vname,vdata in vrfs.items() if 'global' not in vname %}
 - path: routing-policy/policy[name={{vname}}_ebgp_export_new]
   val:
    default-action:

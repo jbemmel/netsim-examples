@@ -70,14 +70,19 @@ bgp:
 # 2. Some customers can be allowed to leak amongst each other
 #
 vrfs:
-  global: # Global VRF
+  global: # Global VRF on spines
     evpn.transit_vni: 11111 # Use symmetric IRB with RT5 EVPN prefixes
 
     # Carefully ordered, else conflicts with EVPN
-    import: [global,customer1,customer2]
+    import: [global] # Customer routes imported by adding GLOBAL community
     export: [global]
 
     loopback: True # For testing purposes
+
+  leaf_global:
+    evpn.transit_vni: global # Not used in data path, must match to import routes
+    import: [global,customer1,customer2]
+    export: [ "0:0" ]
 
   customer1:
     as: 65111
@@ -296,13 +301,13 @@ links:
     vlan.trunk: [route-leak-to-global-customer1,route-leak-to-global-customer2,route-leak-to-global-customer3]
     vlan.trunk:
       route-leak-to-global-customer1:
-        vrf: global
+        vrf: leaf_global
         # bgp.local_as: 65001 (uses node AS)
       route-leak-to-global-customer2:
-        vrf: global
+        vrf: leaf_global
         # bgp.local_as: 65001
       route-leak-to-global-customer3:
-        vrf: global
+        vrf: leaf_global
 
   - node: leaf1
     ifindex: 52
@@ -333,7 +338,7 @@ links:
       #   vrf: global
       #   # bgp.local_as: 65001
       route-leak-to-global-customer3:
-        vrf: global
+        vrf: leaf_global
 
   - node: leaf2
     ifindex: 52

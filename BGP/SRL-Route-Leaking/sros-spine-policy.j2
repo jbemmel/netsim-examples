@@ -1,18 +1,31 @@
+delete:
+- configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]/export
+- configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]/import
+- configure/service/vprn[service-name=global]/bgp/group[group-name=ebgp]/export
+- configure/service/vprn[service-name=global]/bgp/group[group-name=ebgp]/import
+
 updates:
-- path: configure/policy-options/community[name=global_export]
+- path: configure/policy-options/community[name=GLOBAL]
   val:
    member:
    - member: "target:{{ vrfs['global']['export'][0] }}"
+
+- path: configure/policy-options/prefix-list[name=CUSTOMER-SUBNETS]
+  val:
+   prefix:
+   - ip-prefix: 0.0.0.0/0
+     type: range
+     start-length: 24
+     end-length: 24
 
 - path: configure/policy-options/policy-statement[name=global_ebgp_import_new]
   val:
    default-action:
     action-type: accept
     community:
-     replace: ["global_export"]
+     replace: ["GLOBAL"]
 
 {# Only advertise EVPN routes from customers towards MPLS, not local interfaces #}
-{# Note: not quite working, mpls still seeing /31 prefixes #}
 - path: configure/policy-options/policy-statement[name=global_ebgp_export_new]
   val:
    default-action:
@@ -20,9 +33,24 @@ updates:
    entry:
    - entry-id: 10
      from:
-      family: ["evpn"]
+      prefix-list: ["CUSTOMER-SUBNETS"]
      action:
       action-type: accept  # Optionally, strip all communities
+
+- path: configure/policy-options/policy-statement[name=default_ibgp_import_evpn_new]
+  val:
+   description: "Import policy to reject looped routes, mark customer routes as GLOBAL"
+   entry:
+   - entry-id: 10
+     from:
+      local-preference:
+       value: "99"      # Marked by leaves
+     action:
+      action-type: reject
+   default-action:
+    action-type: accept
+    community:
+     add: ["GLOBAL"]
 
 - path: configure/policy-options/policy-statement[name=default_ibgp_export_evpn_new]
   val:
@@ -38,10 +66,13 @@ updates:
 
 - path: configure/service/vprn[service-name=global]/bgp
   val:
-   export:
-    policy: ["global_ebgp_export_new"]
-   import:
-    policy: ["global_ebgp_import_new"]
+   group:
+   - group-name: ebgp
+     preference: 169 # prefer eBGP routes, needed for some reason (171 not applied)
+     export:
+      policy: ["global_ebgp_export_new"]
+     import:
+      policy: ["global_ebgp_import_new"]
 
 {# Keep all routes in the Global VRF FIB on spines #}
 - path: configure/router[router-name=Base]/bgp
@@ -49,6 +80,10 @@ updates:
    group:
    - group-name: ibgp-ipv4
      preference: 171 # prefer eBGP routes
+     import:
+      policy: ["default_ibgp_import_evpn_new"]
      export:
       policy: ["default_ibgp_export_evpn_new"]  # Avoid advertising local /31 links, do need EVPN routes as RR
    mp-bgp-keep: True
+   vpn-apply-export: True
+   vpn-apply-import: True

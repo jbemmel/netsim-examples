@@ -51,7 +51,7 @@ updates:
 
 {% endfor %}
 
-{% if 'global' in vrfs %}
+{% if 'leaf_global' in vrfs %}
 
 {# Reduce local preference for routes received via selfloop, has no effect on route selection #}
 - path: routing-policy/policy[name=selfloop_import_reduce_localpref]
@@ -62,7 +62,7 @@ updates:
        local-preference:
         set: 99  # Reduced from default 100
 
-- path: network-instance[name=global]/protocols/bgp
+- path: network-instance[name=leaf_global]/protocols/bgp
   val:
    export-policy: accept_all
    import-policy: selfloop_import_reduce_localpref

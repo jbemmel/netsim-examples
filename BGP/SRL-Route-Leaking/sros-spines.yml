@@ -80,29 +80,29 @@ vrfs:
     loopback: True # For testing purposes
 
   leaf_global:
-    evpn.transit_vni: global # Not used in data path, must match to import routes
+    evpn.transit_vni: global # Not used in ingress data path, but must match to import routes
     import: [global,customer1,customer2]
-    export: [ "0:0" ]
+    export: [leaf_global]    # Done internally, to customer VRFs via self-loop
 
   customer1:
     as: 65111
     evpn.transit_vni: 5111
 
-    import: [customer1,global]
+    import: [customer1,leaf_global]
     export: [customer1]
 
   customer2:
     as: 65222
     evpn.transit_vni: 5222
 
-    import: [customer2,global,customer3]  # add leaking with customer3
+    import: [customer2,leaf_global,customer3]  # add leaking with customer3
     export: [customer2]
 
   customer3:
     as: 65333
     evpn.transit_vni: 5333
 
-    import: [customer3,global,customer2]
+    import: [customer3,leaf_global,customer2]
     export: [customer3]
 
 vlans:       # All have mode:irb
@@ -143,8 +143,8 @@ vlans:       # All have mode:irb
     pool: bgp-unnumbered
 
   # Global vlan only used to generate prefix list + communities
-  global:
-    vrf: global
+  leaf_global:
+    vrf: leaf_global
     prefix: 8.8.8.8/32
 
 # By default, all global vlans are assigned a VNI

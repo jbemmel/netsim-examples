@@ -39,14 +39,7 @@ updates:
 
 - path: configure/policy-options/policy-statement[name=default_ibgp_import_evpn_new]
   val:
-   description: "Import policy to reject looped routes, mark customer routes as GLOBAL"
-   entry:
-   - entry-id: 10
-     from:
-      local-preference:
-       value: "99"      # Marked by leaves
-     action:
-      action-type: reject
+   description: "Import policy to include customer routes in GLOBAL VRF"
    default-action:
     action-type: accept
     community:
@@ -85,5 +78,5 @@ updates:
      export:
       policy: ["default_ibgp_export_evpn_new"]  # Avoid advertising local /31 links, do need EVPN routes as RR
    mp-bgp-keep: True
-   vpn-apply-export: True
-   vpn-apply-import: True
+   # vpn-apply-export: True
+   # vpn-apply-import: True

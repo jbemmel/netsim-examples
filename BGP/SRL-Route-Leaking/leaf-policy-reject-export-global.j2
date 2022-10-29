@@ -1,0 +1,14 @@
+{% if vrfs is defined and 'leaf_global' in vrfs %}
+
+updates:
+
+- path: routing-policy/policy[name=reject_all]
+  val:
+   default-action:
+    reject: { }
+
+- path: network-instance[name=leaf_global]/protocols/bgp-vpn/bgp-instance[id=1]
+  val:
+   export-policy: reject_all
+
+{% endif %}

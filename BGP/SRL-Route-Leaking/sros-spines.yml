@@ -8,6 +8,7 @@ message: |
   * h1 and h2 (customer 1) should be able to ping each other:   docker exec -it clab-SRL-Route-Leaking-h1 ping 172.16.1.2 -c 2
   * All nodes should be able to reach the Internet:             docker exec -it clab-SRL-Route-Leaking-h1 ping 8.8.8.8
   * h3 and h4 (customer 2/3) should be able to ping each other: docker exec -it clab-SRL-Route-Leaking-h3 ping 172.16.3.4 -c 2
+  * h3 and h5 (customer 2/3) should be able to ping each other: docker exec -it clab-SRL-Route-Leaking-h3 ping 172.16.3.5 -c 2
   * h1 should not be able to reach h3 or h4    :                docker exec -it clab-SRL-Route-Leaking-h1 ping 172.16.3.4 -c 2
 
   To see routing policies: docker exec -it clab-SRL-Route-Leaking-leaf1 sr_cli "info /routing-policy policy customer1_ebgp_import_new"
@@ -333,8 +334,8 @@ links:
       # route-leak-to-global-customer1:
       #   vrf: global
       #   # bgp.local_as: 65001 (uses node AS)
-      # route-leak-to-global-customer2:
-      #   vrf: global
+      route-leak-to-global-customer2:
+        vrf: leaf_global
       #   # bgp.local_as: 65001
       route-leak-to-global-customer3:
         vrf: leaf_global
@@ -347,9 +348,9 @@ links:
       # route-leak-to-global-customer1:
       #   vrf: customer1
       #   bgp.local_as: 65111 # TODO take from vrf?
-      # route-leak-to-global-customer2:
-      #   vrf: customer2
-      #   bgp.local_as: 65222
+      route-leak-to-global-customer2:
+        vrf: customer2
+        bgp.local_as: 65222
       route-leak-to-global-customer3:
         vrf: customer3
         bgp.local_as: 65333

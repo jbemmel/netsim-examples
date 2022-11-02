@@ -37,13 +37,14 @@ updates:
      action:
       action-type: accept  # Optionally, strip all communities
 
-- path: configure/policy-options/policy-statement[name=default_ibgp_import_evpn_new]
-  val:
-   description: "Import policy to include customer routes in GLOBAL VRF"
-   default-action:
-    action-type: accept
-    community:
-     add: ["GLOBAL"]
+# Moved to leaves
+# - path: configure/policy-options/policy-statement[name=default_ibgp_import_evpn_new]
+#   val:
+#    description: "Import policy to include customer routes in GLOBAL VRF"
+#    default-action:
+#     action-type: accept
+#     community:
+#      add: ["GLOBAL"]
 
 - path: configure/policy-options/policy-statement[name=default_ibgp_export_evpn_new]
   val:
@@ -73,8 +74,8 @@ updates:
    group:
    - group-name: ibgp-ipv4
      preference: 171 # prefer eBGP routes
-     import:
-      policy: ["default_ibgp_import_evpn_new"]
+     # import:
+     #  policy: ["default_ibgp_import_evpn_new"]
      export:
       policy: ["default_ibgp_export_evpn_new"]  # Avoid advertising local /31 links, do need EVPN routes as RR
    mp-bgp-keep: True

@@ -53,6 +53,33 @@ updates:
 
 {% if 'leaf_global' in vrfs %}
 
+{# Create GLOBAL community #}
+- path: routing-policy/community-set[name=GLOBAL]
+  val:
+   member: [ "target:{{ topology.vrfs['leaf_global'].import[0] }}" ]
+
+- path: routing-policy/policy[name=ibgp_evpn_export]
+  val:
+   description: "Add GLOBAL community to all exported EVPN RT5 prefixes"
+   statement:
+   - sequence-id: 10
+     match:
+      bgp:
+       evpn:
+        route-type: [ 5 ]
+     action:
+      accept:
+       bgp:
+        communities:
+         add: GLOBAL
+
+   default-action:
+    accept: { }
+
+- path: network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+  val:
+   export-policy: ibgp_evpn_export
+
 {# Reduce local preference for routes received via selfloop, has no effect on route selection #}
 - path: routing-policy/policy[name=selfloop_import_reduce_localpref]
   val:

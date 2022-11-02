@@ -60,9 +60,9 @@ updates:
 
 - path: routing-policy/policy[name=ibgp_evpn_export]
   val:
-   # description: "Add GLOBAL community to all exported EVPN RT5 prefixes"
    statement:
    - sequence-id: 10
+     _annotate: "Add GLOBAL community to all exported EVPN RT5 prefixes"
      match:
       bgp:
        evpn:

@@ -111,21 +111,25 @@ vlans:       # All have mode:irb
     id: 2001
     vrf: customer1
     bgp: False
+    gateway: True
 
   v2002:
     id: 2002
     vrf: customer1
     bgp: False
+    gateway: True
 
   v3001:
     id: 3001
     vrf: customer2
     bgp: False
+    gateway: True
 
   v3010:
     id: 3010
     vrf: customer3
     bgp: False
+    gateway: True
 
   # Route leaking vlans
   route-leak-to-global-customer1:
@@ -164,7 +168,7 @@ groups:
   leaves:
     members: [ leaf1,leaf2 ]
     device: srlinux
-    module: [ bgp,evpn,vlan,vrf,vxlan ]
+    module: [ bgp,evpn,vlan,vrf,vxlan,gateway ]
     config: [ leaf-policy.j2, leaf-policy-reject-export-global.j2 ]
     clab.binds:
      create_customer_sh: /home/admin/create_customer.sh

@@ -1,0 +1,132 @@
+name: SRL-Route-Leaking
+
+mgmt:
+  network: netlab_mgmt
+  ipv4_subnet: 192.168.121.0/24
+  # Note: 'start' not validated
+
+topology:
+  nodes:
+    h1:
+      mgmt_ipv4: 192.168.121.101
+      kind: linux
+      image: python:3.9-alpine
+      runtime: docker
+      group: hosts
+    h2:
+      mgmt_ipv4: 192.168.121.102
+      kind: linux
+      image: python:3.9-alpine
+      runtime: docker
+      group: hosts
+    h3:
+      mgmt_ipv4: 192.168.121.103
+      kind: linux
+      image: python:3.9-alpine
+      runtime: docker
+      group: hosts
+    h4:
+      mgmt_ipv4: 192.168.121.104
+      kind: linux
+      image: python:3.9-alpine
+      runtime: docker
+      group: hosts
+    h5:
+      mgmt_ipv4: 192.168.121.105
+      kind: linux
+      image: python:3.9-alpine
+      runtime: docker
+      group: hosts
+    spine1:
+      mgmt_ipv4: 192.168.121.106
+      kind: vr-sros
+      type: 'sr-1'
+      image: vrnetlab/vr-sros
+      runtime: docker
+      group: spines,as65000
+      license: /Projects/SR_OS_VSR-SIM_license.txt
+    spine2:
+      mgmt_ipv4: 192.168.121.107
+      kind: vr-sros
+      type: 'sr-1'
+      image: vrnetlab/vr-sros
+      runtime: docker
+      group: spines,as65000
+      license: /Projects/SR_OS_VSR-SIM_license.txt
+    leaf1:
+      mgmt_ipv4: 192.168.121.108
+      kind: srl
+      type: 'ixrd2'
+      image: ghcr.io/nokia/srlinux:latest
+      runtime: docker
+      group: leaves,as65000
+      binds:
+      - create_customer_sh:/home/admin/create_customer.sh
+      - aliases_srlinuxrc:/home/admin/.srlinuxrc
+    leaf2:
+      mgmt_ipv4: 192.168.121.109
+      kind: srl
+      type: 'ixrd2'
+      image: ghcr.io/nokia/srlinux:latest
+      runtime: docker
+      group: leaves,as65000
+      binds:
+      - create_customer_sh:/home/admin/create_customer.sh
+      - aliases_srlinuxrc:/home/admin/.srlinuxrc
+    mplsnet:
+      mgmt_ipv4: 192.168.121.110
+      kind: srl
+      type: 'ixrh2'
+      image: ghcr.io/nokia/srlinux:latest
+      runtime: docker
+      group: mpls,as65100
+
+    SRL-Route-_13:
+      kind: bridge
+
+  links:
+  - endpoints:
+    - "h1:eth1"
+    - "leaf1:e1-1"
+  - endpoints:
+    - "h2:eth1"
+    - "leaf1:e1-2"
+  - endpoints:
+    - "h3:eth1"
+    - "leaf1:e1-3"
+  - endpoints:
+    - "h4:eth1"
+    - "leaf1:e1-4"
+  - endpoints:
+    - "h5:eth1"
+    - "leaf2:e1-1"
+  - endpoints:
+    - "spine1:eth1"
+    - "leaf1:e1-49"
+  - endpoints:
+    - "spine2:eth1"
+    - "leaf1:e1-50"
+  - endpoints:
+    - "spine1:eth2"
+    - "leaf2:e1-49"
+  - endpoints:
+    - "spine2:eth2"
+    - "leaf2:e1-50"
+  - endpoints:
+    - "spine1:eth3"
+    - "mplsnet:e1-1"
+  - endpoints:
+    - "spine2:eth3"
+    - "mplsnet:e1-2"
+  - endpoints:
+    - "spine1:eth4"
+    - "spine2:eth4"
+  - endpoints:
+    - "mplsnet:e1-3"
+    - "SRL-Route-_13:mplsnet_e1-3"
+  - endpoints:
+    - "leaf1:e1-51"
+    - "leaf1:e1-52"
+  - endpoints:
+    - "leaf2:e1-51"
+    - "leaf2:e1-52"

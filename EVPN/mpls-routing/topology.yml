@@ -1,0 +1,95 @@
+message: |
+  This lab builds a L3 domain with a mix of bridged and routed VLANs across a pair of routers running
+  EVPN with MPLS transport. All hosts connected to VLANs (h1-h2) should be
+  able to ping each other.
+
+provider: clab
+defaults.device: srlinux
+
+defaults.devices.sros.interface_name_eval: "'1/1/%d' if ifindex<33 else '1/1/c%d/1'"
+
+bgp.as: 65000
+
+vlans:
+  99:
+    id: 99
+    mode: bridge
+    # evpn: # JvB: enable EVPN, this should add EVI
+      # transport: mpls # default: vxlan
+  100:
+    id: 100
+    mode: irb
+
+  200:
+    id: 200
+    mode: bridge
+
+  300:
+    id: 300
+    mode: bridge
+
+  400:
+    id: 400
+    mode: bridge
+
+evpn:
+  vlans: [ 99,100,200,300,400 ] # Currently not set automatically
+  # vlan_bundle_service: True TODO, for L2 VLANs
+  # vrfs: [ tenant ]
+  transport: mpls
+
+groups:
+  hosts:
+    members: [ h1, h2 ]
+    device: frr
+    module: [ bgp, ospf, vlan ]
+    vlan.mode: route
+
+  routers:
+    members: [ r1, r2 ]
+    device: sros
+    module: [ bgp, ospf, mpls, vlan, evpn ]
+    bgp.as: 65525
+    clab.type: ixr-e-big # ixr-ec integrated
+
+  core:
+    members: [ c ]
+    device: sros
+    module: [ ospf, mpls, bgp, evpn ]
+    bgp.as: 57866
+    clab.type: ixr-ec # integrated
+
+nodes: [ c, r1, r2, p, h1, h2 ]
+
+addressing:
+  p2p:
+    ipv4: 37.139.137.0/24
+    prefix: 31
+    ipv6: 2a00:a7c0:20::/48  # Becomes /64 on each link
+
+links:
+- c-r1
+- c-r2
+
+- r1:
+  h1:
+  vlan.trunk: [99,100,200,300,400]
+- r1:
+  h2:
+  vlan.trunk: [99,100,200,300,400]
+- r2:
+  h1:
+  vlan.trunk: [99,100,200,300,400]
+- r2:
+  h2:
+  vlan.trunk: [99,100,200,300,400]
+
+- r1:  # TODO lag
+   # ifindex: 33  # vSIM only supports 8 NICs, up to 1/1/6
+  r2:
+   # ifindex: 33
+
+- r1:
+   # ifindex: 34
+  r2:
+   # ifindex: 34

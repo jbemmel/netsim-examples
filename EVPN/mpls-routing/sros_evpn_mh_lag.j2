@@ -1,0 +1,24 @@
+#
+# See https://derekcheung.medium.com/bgp-evpn-and-all-active-multi-homing-ethernet-segment-d797172cabf1
+# for config snippets
+
+updates:
+{# Create Ethernet Segments and lag interfaces for all marked interfaces #}
+{% for l in interfaces if 'evpn' in l and 'mh_lag' in l.evpn %}
+{% set lag_id = l.evpn.mh_lag %}
+- path: configure/port[port-id={{ l.ifname }}]
+  val:
+   ethernet:
+    mode: access
+- path: configure/lag[lag-name=lag-{{lag_id}}]
+  val:
+   mode: access
+   encap-type: dot1q
+   port:
+   - port-id: {{ l.ifname }}
+   lacp:
+    mode: active
+    administrative-key: {{ lag_id }}
+    system-id: "00:00:00:00:00:{{ '%02x'|format(lag_id) }}"
+   admin-state: enable
+{% endfor %}

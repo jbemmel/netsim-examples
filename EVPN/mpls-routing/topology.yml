@@ -6,60 +6,71 @@ message: |
 provider: clab
 defaults.device: srlinux
 
+plugin: [ evpn-mh ]
+
 defaults.devices.sros.interface_name_eval: "'1/1/%d' if ifindex<33 else '1/1/c%d/1'"
 
 bgp.as: 65000
 
 vlans:
-  99:
+  v99:
     id: 99
     mode: bridge
+    vrf: tenant
     # evpn: # JvB: enable EVPN, this should add EVI
       # transport: mpls # default: vxlan
-  100:
+  v100:
     id: 100
     mode: irb
+    vrf: tenant
 
-  200:
+  v200:
     id: 200
     mode: bridge
+    vrf: tenant
 
-  300:
+  v300:
     id: 300
     mode: bridge
+    vrf: tenant
 
-  400:
+  v400:
     id: 400
     mode: bridge
+    vrf: tenant
+
+vrfs:
+  tenant:
 
 evpn:
-  vlans: [ 99,100,200,300,400 ] # Currently not set automatically
+  vlans: [ v99,v100,v200,v300,v400 ] # Currently not set automatically
   # vlan_bundle_service: True TODO, for L2 VLANs
-  # vrfs: [ tenant ]
+  vrfs: [ tenant ]
   transport: mpls
 
 groups:
   hosts:
     members: [ h1, h2 ]
     device: frr
-    module: [ bgp, ospf, vlan ]
+    module: [ vlan ]
     vlan.mode: route
 
   routers:
     members: [ r1, r2 ]
     device: sros
-    module: [ bgp, ospf, mpls, vlan, evpn ]
+    module: [ bgp, ospf, mpls, vlan, evpn, vrf ]
     bgp.as: 65525
     clab.type: ixr-e-big # ixr-ec integrated
+    # plugin: [ evpn-mh ] # doesn't work
 
   core:
     members: [ c ]
     device: sros
-    module: [ ospf, mpls, bgp, evpn ]
+    module: [ ospf, mpls, bgp, evpn, vrf ]
     bgp.as: 57866
     clab.type: ixr-ec # integrated
 
-nodes: [ c, r1, r2, p, h1, h2 ]
+nodes: [ c, r1, r2, h1, h2 ]
 
 addressing:
   p2p:
@@ -67,22 +78,31 @@ addressing:
     prefix: 31
     ipv6: 2a00:a7c0:20::/48  # Becomes /64 on each link
 
+  lan:
+    ipv4: 37.139.142.0/24 # .64 originally
+    prefix: 28
+    ipv6: 2a00:a7c0:1166::/48
+
 links:
 - c-r1
 - c-r2
 
 - r1:
+    evpn.mh_lag: 1
   h1:
-  vlan.trunk: [99,100,200,300,400]
+  vlan.trunk: [v99,v100,v200,v300,v400]
 - r1:
+    evpn.mh_lag: 2
   h2:
-  vlan.trunk: [99,100,200,300,400]
+  vlan.trunk: [v99,v100,v200,v300,v400]
 - r2:
+    evpn.mh_lag: 1
   h1:
-  vlan.trunk: [99,100,200,300,400]
+  vlan.trunk: [v99,v100,v200,v300,v400]
 - r2:
+    evpn.mh_lag: 2
   h2:
-  vlan.trunk: [99,100,200,300,400]
+  vlan.trunk: [v99,v100,v200,v300,v400]
 
 - r1:  # TODO lag
    # ifindex: 33  # vSIM only supports 8 NICs, up to 1/1/6
@@ -93,3 +113,7 @@ links:
    # ifindex: 34
   r2:
    # ifindex: 34
+
+- c: # stub interface
+   ipv4: 8.8.8.8/24
+   vrf: tenant

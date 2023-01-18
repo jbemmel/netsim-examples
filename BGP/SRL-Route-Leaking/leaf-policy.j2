@@ -21,15 +21,15 @@ updates:
 - path: routing-policy/policy[name={{vname}}_ebgp_export_new]
   val:
    default-action:
-    accept:
-     bgp:
-      communities:
-       replace: {{ vname }}_export
+    policy-result: "accept"
+    bgp:
+     communities:
+      replace: {{ vname }}_export
 
 - path: routing-policy/policy[name={{vname}}_ebgp_import_new]
   val:
    default-action:
-    reject: { }
+    policy-result: "reject"
    statement:
 {%  for c in vdata.import|default([]) %}
    - sequence-id: {{ 10 + loop.index }}
@@ -38,10 +38,10 @@ updates:
       # bgp:
       #  community-set: "C{{ c|replace(':','_') }}"
      action:
-      accept:
-       bgp:
-        communities:
-         add: no-advertise  # Don't advertise these leaked prefixes
+      policy-result: "accept"
+      bgp:
+       communities:
+        add: no-advertise  # Don't advertise these leaked prefixes
 {%  endfor %}
 
 - path: network-instance[name={{vname}}]/protocols/bgp
@@ -68,13 +68,13 @@ updates:
        evpn:
         route-type: [ 5 ]
      action:
-      accept:
-       bgp:
-        communities:
-         add: GLOBAL
+      policy-result: "accept"
+      bgp:
+       communities:
+        add: GLOBAL
 
    default-action:
-    accept: { }
+    policy-result: "accept"
 
 - path: network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
   val:
@@ -84,10 +84,10 @@ updates:
 - path: routing-policy/policy[name=selfloop_import_reduce_localpref]
   val:
    default-action:
-    accept:
-      bgp:
-       local-preference:
-        set: 99  # Reduced from default 100
+    policy-result: "accept"
+    bgp:
+     local-preference:
+      set: 99  # Reduced from default 100
 
 - path: network-instance[name=leaf_global]/protocols/bgp
   val:

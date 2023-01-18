@@ -5,7 +5,7 @@ updates:
 - path: routing-policy/policy[name=reject_all]
   val:
    default-action:
-    reject: { }
+    policy-result: "reject"
 
 - path: network-instance[name=leaf_global]/protocols/bgp-vpn/bgp-instance[id=1]
   val:

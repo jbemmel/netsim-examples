@@ -5,34 +5,34 @@ updates:
 - path: routing-policy/policy[name=global_ebgp_import_new]
   val:
    default-action:
-    accept:
-     bgp:
-      communities:
-       replace: global_export
+    policy-result: "accept"
+    bgp:
+     communities:
+      replace: global_export
 
 {# Only advertise EVPN routes from customers towards MPLS, not local interfaces #}
 {# Note: not quite working, mpls still seeing /31 prefixes #}
 - path: routing-policy/policy[name=global_ebgp_export_new]
   val:
    default-action:
-    reject: { }
+    policy-result: "reject"
    statement:
    - sequence-id: 10
      match:
       protocol: bgp-evpn
      action:
-      accept: { }  # Optionally, strip all communities
+      policy-result: "accept"  # Optionally, strip all communities
 
 - path: routing-policy/policy[name=default_ibgp_export_evpn_new]
   val:
    default-action:
-    accept: { }
+    policy-result: "accept"
    statement:
    - sequence-id: 10
      match:
       protocol: local
      action:
-      reject: { }  # Don't advertise local link IPs or loopbacks
+      policy-result: "reject"  # Don't advertise local link IPs or loopbacks
 
 - path: network-instance[name=global]/protocols/bgp
   val:

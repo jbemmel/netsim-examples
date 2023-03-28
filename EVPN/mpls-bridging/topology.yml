@@ -3,17 +3,16 @@ message: |
   EVPN with MPLS transport. All hosts connected to VLAN 1000 (h1-h4) should be
   able to ping each other.
 
-defaults.device: eos
+defaults.device: sros
+# devices.sros.clab.node.type: sr-1x # 800Gbps FP5 platform
+# defaults.devices.sros.clab.node.type: ixr-s
+provider: clab
 
 bgp.as: 65000
 
 vlans:
   tenant:
     mode: bridge
-    evpn: # JvB: enable EVPN, this should add EVI
-      transport: mpls # default: vxlan
-
-evpn.vlans: [ tenant ] # Currently not set automatically
 
 groups:
   hosts:
@@ -23,9 +22,11 @@ groups:
     members: [ pe1, pe2, pe3 ]
     module: [ bgp, ospf, mpls, vlan, evpn ]
     config: [ evpn.mpls ]
+    clab.node.type: ixr-s
   core:
     members: [ p ]
     module: [ ospf, mpls ]
+    clab.node.type: sr-7s
 
 nodes: [ pe1, pe2, pe3, p, h1, h2, h3, h4 ]
 

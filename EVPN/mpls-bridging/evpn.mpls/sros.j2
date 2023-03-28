@@ -1,19 +1,7 @@
-# mpls label range l2evpn {{ 405000 + 10000 * id }} 1000
-# mpls label range l2evpn ethernet-segment 415000 1000
-# router bgp {{ bgp.as }}
-# !
-# {% for vname,vdata in vlans.items() %}
-#    vlan {{ vdata.id }}
-#       rd {{ loopback.ipv4|ipaddr('address') }}:{{ vdata.id }}
-#       route-target both {{ bgp.as }}:{{ vdata.id }}
-#       redistribute learned
-# {% endfor %}
-# !
-#    address-family evpn
-#       neighbor default encapsulation mpls next-hop-self source-interface Loopback0
-
+#
 # See https://documentation.nokia.com/cgi-bin/dbaccessfilename.cgi/3HE14991AAAFTQZZA01_V1_7450%20ESS%207750%20SR%207950%20XRS%20Advanced%20Configuration%20Guide%20for%20Releases%20up%20to%2021.5.R2-Part%20II.pdf
 # EVPN for MPLS Tunnels
+#
 
 {% macro mpls_interface(vrf,evi) %}
 - path: configure/service/vpls[service-name={{ vrf }}]
@@ -42,6 +30,17 @@
 {% endmacro %}
 
 updates:
+{% if 'ixr' in clab.type %}
+- path: configure/router[router-name=Base]/mpls-labels/reserved-label-block[label-block-name=BUM]
+  val:
+   start-label: 32000
+   end-label: 32999
+
+- path: configure/service/system/bgp/evpn
+  val:
+   ingress-replication-bum-label-block: "BUM"
+{% endif %}
+
 {% for vname,vdata in vlans.items() %}
 {{ mpls_interface('vlan'+vdata.id|string,vdata.id) }}
 {% endfor %}

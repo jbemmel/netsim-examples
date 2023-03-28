@@ -22,11 +22,11 @@ groups:
     members: [ pe1, pe2, pe3 ]
     module: [ bgp, ospf, mpls, vlan, evpn ]
     config: [ evpn.mpls ]
-    clab.node.type: ixr-s
+    clab.type: ixr-s
   core:
     members: [ p ]
     module: [ ospf, mpls ]
-    clab.node.type: sr-7s
+    clab.type: sr-7s
 
 nodes: [ pe1, pe2, pe3, p, h1, h2, h3, h4 ]
 

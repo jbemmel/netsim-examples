@@ -48,7 +48,7 @@ addressing:
     prefix: 31
     ipv6: True # ipv6 lla
 
-  dualstack-tenants:
+  dualstack-ten:
     ipv4: 192.168.0.0/16
     prefix: 24
     ipv6: 2001:192:168::/48
@@ -56,7 +56,7 @@ addressing:
 vlans:
   red-hot:
     vrf: tenant
-    pool: dualstack-tenants
+    pool: dualstack-ten
     gateway: True # anycast gateway default: last of every ipv4/ipv6 subnet
   blue:
     vrf: tenant

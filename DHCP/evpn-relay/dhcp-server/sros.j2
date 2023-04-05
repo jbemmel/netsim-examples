@@ -1,0 +1,33 @@
+updates:
+- path: configure/router[router-name=Base]
+  val:
+   dhcp-server:
+    dhcpv4:
+    - name: "dhcp-server"
+      admin-state: enable
+      pool-selection:
+        use-gi-address:
+          scope: pool
+      pool:
+      - pool-name: default
+        subnet:
+{% for h,v in hostvars.items() %}
+{%   for intf in v.interfaces if intf.dhcp.server is defined and intf.ipv4 is defined %}
+        - ipv4-prefix: {{ intf.ipv4|ipaddr('subnet') }}
+          address-range:
+          - start: {{ intf.ipv4|ansible.utils.ipaddr('subnet')|ipaddr(1)|ipaddr('address') }}
+            end:   {{ intf.ipv4|ansible.utils.ipaddr('subnet')|ipaddr(-2)|ipaddr('address') }}
+          exclude-addresses:
+          - start: {{ intf.ipv4|ipaddr('address') }}
+            end: {{ intf.ipv4|ipaddr('address') }}
+{%     if intf.gateway is defined and 'ipv4' in intf.gateway %}
+          - start: {{ intf.gateway.ipv4|ipaddr('address') }}
+            end: {{ intf.gateway.ipv4|ipaddr('address') }}
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+
+   interface:
+   - interface-name: system
+     ipv4:
+      local-dhcp-server: "dhcp-server"

@@ -4,6 +4,8 @@ message: |
   Cisco CSR1000v), DHCP clients (using Cisco IOSv) and two intermediate
   VXLAN/EVPN-enabled switches running Arista vEOS.
 
+provider: clab
+
 defaults.attributes:
   link.dhcp:
     client: bool
@@ -14,16 +16,23 @@ groups:
     members: [ srv ]
     module: [ ospf ]
     config: [ dhcp-server ]
-    device: csr
+    # device: srlinux # Only static DHCP entries supported
+    device: sros
   dhcp_client:
     members: [ cl_a, cl_b ]
     config: [ dhcp-client ]
-    device: iosv
+    # device: srlinux # DHCP only supported on mgmt
+    # device: sros
+    # clab.type: ixr-ec
+    device: linux
+    clab.image: alpine # python # Netlab needs Python installed
+    clab.binds:
+      "dhcp-client/alpine.interfaces": "/etc/network/interfaces"
   switch:
     members: [ sw1, sw2 ]
     module: [ ospf,bgp,vrf,vlan,vxlan,gateway,evpn ]
     config: [ dhcp-relay ]
-    device: eos
+    device: srlinux
 
 vrfs:
   client:

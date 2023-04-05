@@ -9,12 +9,14 @@ updates:
    ipv4:
     dhcp-relay:
      admin-state: enable
+     # gi-address: {{ loopback.ipv4|ipaddr('address') }}
+     # use-gi-addr-as-src-ip-addr: True
 {%   if intf.vrf is defined %}
      network-instance: default
 {%   endif %}
      server:
      - {{ helper }}
-     trace-options:
-      trace: ["messages"]
+     # trace-options:
+     #  trace: ["messages"]
 
 {% endfor %}

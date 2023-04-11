@@ -9,15 +9,25 @@ provider: clab
 defaults.attributes:
   link.dhcp:
     client: bool
-    server: str
+    relay: str
+    server: bool
 
 groups:
   dhcp_server:
     members: [ srv ]
-    module: [ ospf ]
+    # module: [ ospf, vrf ]
     config: [ dhcp-server ]
     # device: srlinux # Only static DHCP entries supported
-    device: sros
+    # device: sros
+    device: linux
+    # clab.image: networkboot/dhcpd
+    clab.image: strm/dnsmasq
+    # clab.binds:
+    #  "dhcp-server/data": "/data"
+    clab.config_templates:
+      # dhcpd: "/data/dhcpd.conf"
+      dnsmasq: "/etc/dnsmasq.conf"
+
   dhcp_client:
     members: [ cl_a, cl_b ]
     config: [ dhcp-client ]
@@ -36,6 +46,8 @@ groups:
 
 vrfs:
   client:
+  # dhcp:
+  #   loopback: True
 
 vlans:
   cv1:
@@ -55,12 +67,12 @@ links:
 - cl_a:
     dhcp.client: True
   sw1:
-    dhcp.server: srv
+    dhcp.relay: srv
   vlan.access: cv1
 - cl_b:
     dhcp.client: True
   sw2:
-    dhcp.server: srv
+    dhcp.relay: srv
   vlan.access: cv1
 
 defaults.outputs:

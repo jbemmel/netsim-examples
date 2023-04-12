@@ -10,7 +10,7 @@ updates:
      admin-state: enable
      # use-gi-addr-as-src-ip-addr: True
 {%   if intf.vrf is defined %}
-     network-instance: default
+     # network-instance: default
      # Cannot do this - gi-address used to select pool
      # gi-address: {{ loopback.ipv4|ipaddr('address') }}
 {%   endif %}

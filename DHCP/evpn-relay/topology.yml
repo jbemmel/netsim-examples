@@ -46,6 +46,7 @@ groups:
 
 vrfs:
   client:
+    evpn.transit_vni: True
   # dhcp:
   #   loopback: True
 
@@ -55,14 +56,26 @@ vlans:
     ospf.passive: True
     vrf: client
 
+  dhcp1:
+    ospf.passive: True
+    vrf: client
+
+  dhcp2:
+    ospf.passive: True
+    vrf: client
+
 bgp.as: 65000
 gateway.id: 1
 
 nodes: [ srv, sw1, sw2, cl_a, cl_b ]
 
 links:
-- srv-sw1
-- srv-sw2
+- srv:
+  sw1:
+    vlan.access: dhcp1
+- srv:
+  sw2:
+    vlan.access: dhcp2
 - sw1-sw2
 - cl_a:
     dhcp.client: True

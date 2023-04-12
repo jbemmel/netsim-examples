@@ -10,7 +10,7 @@ from urllib.parse import quote
 Adds a custom 'ixp' node attribute
 """
 def init(topology: Box) -> None:
-  topology.defaults.attributes.node.append('ixp')
+  topology.defaults.attributes.node["ixp"] = { "type": "str" }
 
 """
 Lookup ASN in PeeringDB and return ipv4,ipv6 peering IPs at given IX

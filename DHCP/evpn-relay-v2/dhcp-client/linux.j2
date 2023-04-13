@@ -2,9 +2,10 @@
 #
 set -e
 
-# Remove any static IPs
+# Remove any static IPs, start DHCP discovery
 {% for intf in interfaces if intf.dhcp.client is defined and intf.dhcp.client %}
 ip addr flush dev {{ intf.ifname }}
+ifup {{ intf.ifname }}
 {% endfor %}
 
 exit 0

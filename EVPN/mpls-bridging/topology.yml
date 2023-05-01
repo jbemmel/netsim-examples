@@ -11,7 +11,7 @@ vlans:
   tenant:
     mode: bridge
     evpn: # JvB: enable EVPN, this should add EVI
-      transport: mpls # default: vxlan
+      # transport: mpls # default: vxlan
 
 evpn.vlans: [ tenant ] # Currently not set automatically
 
@@ -22,7 +22,7 @@ groups:
   pe:
     members: [ pe1, pe2, pe3 ]
     module: [ bgp, ospf, mpls, vlan, evpn ]
-    config: [ evpn.mpls ]
+    # config: [ evpn.mpls ]
   core:
     members: [ p ]
     module: [ ospf, mpls ]

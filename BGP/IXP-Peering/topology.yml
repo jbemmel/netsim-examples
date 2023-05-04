@@ -36,9 +36,15 @@ nodes:
   Twitter:
     bgp.as: 13414 # Twitter AS
     bgp.originate: [ 104.244.42.0/24, 2001:104:244:42::/64 ]
+    image: srl/ixp-agent:latest
+    clab.srl-agents: [ ../../../srl-ixp-agent/ixp-agent.yml ]
+    clab.startup-config: |
+     set /system dns server-list [ 8.8.8.8 8.8.4.4 1.1.1.1 ] network-instance mgmt
+     set /ixp-agent IXP "DE-CIX Frankfurt" peer-as [ 714 ]
 
   Apple:
     bgp.as: 714
+    bgp.originate: [ 17.17.15.0/24 ] # Based on IRR info
 
   flow-collector:
     device: linux
@@ -49,9 +55,11 @@ links:
 - DE-CIX:
   GlobalConnect:
   Twitter:
+    bgp: False  # Let IXP agent do the peering configuration
   Apple:
 
 # Add a direct link with in-vrf peering
 - GlobalConnect:
   Twitter:
+    bgp: False
   vrf: test

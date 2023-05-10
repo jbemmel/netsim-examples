@@ -1,0 +1,11 @@
+---
+updates:
+- path: /configure/router[router-name=Base]/bgp
+  val:
+   best-path-selection:
+    compare-origin-validation-state: True
+    origin-invalid-unusable: True
+   group:
+   - group-name: ebgp
+     origin-validation:
+      ipv4: True

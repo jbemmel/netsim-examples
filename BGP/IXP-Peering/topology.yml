@@ -36,7 +36,7 @@ nodes:
      /configure cflowd admin-state enable sample-profile 1 sample-rate 10
      /configure cflowd collector 192.168.121.105 port 2055 admin-state enable version 9
      /configure router interface i1/1/c1 cflowd-parameters sampling unicast type interface direction both
-     /configure router origin-validation rpki-session 172.16.1.6 description "rtr.rpki.cloudflare.com" admin-state enable port 8282
+     /configure router "management" origin-validation rpki-session 192.168.121.106 description "https://console.rpki-client.org/vrps.json" admin-state enable port 8282
 
   Twitter:
     bgp.as: 13414 # Twitter AS
@@ -50,16 +50,25 @@ nodes:
   Apple:
     bgp.as: 714
     bgp.originate: [ 17.17.15.0/24 ] # Based on IRR info
+    image: srl/rpki-agent:latest
+    clab.srl-agents: [ ../../../srl-rpki-agent/srl-rpki-agent.yml ]
 
   flow-collector:
     device: linux
     image: netsampler/goflow2:dev
     clab.cmd: -format csv -format.selector SrcAddr,DstAddr,Etype,Proto,SrcPort,DstPort,TCPFlags
 
+  #
+  # It's possible to connect directly to rtr.rpki.cloudflare.com, this offers a
+  # local cache in case the public server goes down.
+  #
+  # In production, one may want to run multiple of these (on different servers)
+  # For example, on SR Linux spines
+  #
   rpki:
     device: linux
-    image: cloudflare/gortr
-
+    # image: cloudflare/gortr # older software
+    image: rpki/stayrtr # By default uses https://console.rpki-client.org/vrps.json
 
 links:
 - DE-CIX:
@@ -74,6 +83,6 @@ links:
     bgp: False
   vrf: test
 
-- GlobalConnect:
-  rpki:
-    ipv6: False
+# - GlobalConnect:
+#   rpki:
+#     ipv6: False

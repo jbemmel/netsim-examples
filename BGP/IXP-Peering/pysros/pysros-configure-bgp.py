@@ -57,14 +57,26 @@ def add_peers(*, connection, peers):
     """Generate the configuration for each BGP peer, configure it"""
     print("Adding BGP peers...")
     for peer in peers:
+        pfx_list = [] # [{ "ip-prefix": p, "type": "exact" } for p in peer["prefixlist"]]
+        print( type(pfx_list) )
         template = {
             "group": "ebgp",
+            "peer-as": peer['as'],
+            "description": f"Provisioned by PySROS - {peer['desc']}",
         }
         try:
-            connection.candidate.set(
-                f"/nokia-conf:configure/router[router-name=Base]/bgp/neighbor[ip-address={peer['ip4']}]",
-                template,
-            )
+            for p in peer["prefixlist"]:
+                connection.candidate.set(
+                    f"/nokia-conf:configure/policy-options/prefix-list[name=rpki-pfx-{peer['as']}]",
+                    # Composite key ip-prefix + type
+                    { "prefix": { "ip-prefix": p, "type": "exact" } }
+                )
+            for a in ('ip4','ip6'):
+                if peer[a]:
+                    connection.candidate.set(
+                        f"/nokia-conf:configure/router[router-name=Base]/bgp/neighbor[ip-address={peer[a]}]",
+                        template,
+                    )
         except Exception as error:  # pylint: disable=broad-except
             print("Failed to create", peer, "Error:", error)
             continue
@@ -128,7 +140,7 @@ def main():
         for host in inventory_hosts:
             try:
                 connection_object = get_connection(host, creds)
-                add_peers(connection=connection_object, peers=[{ 'ip4': ip4 }])
+                add_peers(connection=connection_object, peers=[{ 'as': asn, 'ip4': ip4, 'ip6': ip6, 'desc': site, 'prefixlist': prefixlist }])
             except Exception:  # pylint: disable=broad-except
                 continue
 

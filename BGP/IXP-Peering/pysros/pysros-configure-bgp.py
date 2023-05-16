@@ -75,7 +75,7 @@ def add_peers(*, connection, peers):
                         "nokia-conf:entry": {
                             10: {
                                 "from": {
-                                    "prefix-list": [f"rpki-pfx-{peer['as']}-{a}"]
+                                    "prefix-list": [ f"rpki-pfx-{peer['as']}-{a}" ]
                                 },
                                 "action": {
                                     "action-type": "accept"
@@ -88,10 +88,11 @@ def add_peers(*, connection, peers):
                     }
                     connection.candidate.set(
                         f"/nokia-conf:configure/policy-options/policy-statement[name={policy_name}]",
-                        policy
+                        policy,
                     )
 
-                    template = {
+                    # Create neighbor
+                    neighbor = {
                         "group": "ebgp",
                         "peer-as": peer['as'],
                         "description": f"Provisioned by PySROS - {peer['desc']}",
@@ -99,7 +100,7 @@ def add_peers(*, connection, peers):
                     }
                     connection.candidate.set(
                         f"/nokia-conf:configure/router[router-name=Base]/bgp/neighbor[ip-address={peer[a]}]",
-                        template,
+                        neighbor,
                     )
         except Exception as error:  # pylint: disable=broad-except
             print("Failed to create", peer, "Error:", error)

@@ -65,7 +65,6 @@ def add_peers(*, connection, peers):
                     pfx_list = { (p, "exact") : {} for p in peer["prefixlist"] if (a=='ip4' and '.' in p) or (a=='ip6' and ':' in p) }
                     connection.candidate.set(
                         f"/nokia-conf:configure/policy-options/prefix-list[name=rpki-pfx-{peer['as']}-{a}]",
-
                         { "prefix": pfx_list } if pfx_list else {}
                     )
 

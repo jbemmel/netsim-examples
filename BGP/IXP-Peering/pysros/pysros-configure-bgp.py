@@ -57,22 +57,46 @@ def add_peers(*, connection, peers):
     """Generate the configuration for each BGP peer, configure it"""
     print("Adding BGP peers...")
     for peer in peers:
-        pfx_list = [] # [{ "ip-prefix": p, "type": "exact" } for p in peer["prefixlist"]]
-        print( type(pfx_list) )
-        template = {
-            "group": "ebgp",
-            "peer-as": peer['as'],
-            "description": f"Provisioned by PySROS - {peer['desc']}",
-        }
         try:
-            for p in peer["prefixlist"]:
-                connection.candidate.set(
-                    f"/nokia-conf:configure/policy-options/prefix-list[name=rpki-pfx-{peer['as']}]",
-                    # Composite key ip-prefix + type
-                    { "prefix": { "ip-prefix": p, "type": "exact" } }
-                )
             for a in ('ip4','ip6'):
                 if peer[a]:
+                    # Configure the full prefix list in 1 Netconf transaction, per address type
+                    # Composite key ip-prefix + type
+                    pfx_list = { (p, "exact") : {} for p in peer["prefixlist"] if (a=='ip4' and '.' in p) or (a=='ip6' and ':' in p) }
+                    connection.candidate.set(
+                        f"/nokia-conf:configure/policy-options/prefix-list[name=rpki-pfx-{peer['as']}-{a}]",
+
+                        { "prefix": pfx_list } if pfx_list else {}
+                    )
+
+                    # Create a corresponding import policy
+                    policy_name = f"import-rpki-{peer['as']}-{a}"
+                    policy = {
+                        "nokia-conf:entry": {
+                            10: {
+                                "from": {
+                                    "prefix-list": [f"rpki-pfx-{peer['as']}-{a}"]
+                                },
+                                "action": {
+                                    "action-type": "accept"
+                                }
+                            }
+                        },
+                        "nokia-conf:default-action": {
+                            "action-type": "reject"
+                        }
+                    }
+                    connection.candidate.set(
+                        f"/nokia-conf:configure/policy-options/policy-statement[name={policy_name}]",
+                        policy
+                    )
+
+                    template = {
+                        "group": "ebgp",
+                        "peer-as": peer['as'],
+                        "description": f"Provisioned by PySROS - {peer['desc']}",
+                        "import": { "policy": [ policy_name ] },
+                    }
                     connection.candidate.set(
                         f"/nokia-conf:configure/router[router-name=Base]/bgp/neighbor[ip-address={peer[a]}]",
                         template,

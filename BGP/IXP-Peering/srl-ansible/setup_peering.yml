@@ -3,6 +3,8 @@
 #
 # Sample Ansible playbook to configure BGP peering based on PeeringDB and IRR database queries
 #
+# Before using: ansible-galaxy collection install nokia.srlinux
+#
 
 - name: Configure SR Linux BGP peering
   # hosts: srlinux

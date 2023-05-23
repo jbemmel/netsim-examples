@@ -26,9 +26,9 @@ nodes:
   #
   # RPKI rtr.rpki.cloudflare.com -> 172.65.0.2 or 2606:4700:60::2
   #
-  GlobalConnect:
-    bgp.as: 12552 # Global Connect AS
-    bgp.originate: [ 194.19.50.0/24, 2001:194:19:50::/64 ]
+  Google:
+    bgp.as: 15169 # Google AS
+    bgp.originate: [ 8.8.8.0/24, 8.8.4.0/24, 1.2.3.0/24 ] # First two are valid in RPKI, last is not
     device: sros
     clab.type: sr-1
     config: [ rpki ]
@@ -41,7 +41,7 @@ nodes:
 
   Twitter:
     bgp.as: 13414 # Twitter AS
-    bgp.originate: [ 104.244.42.0/24, 2001:104:244:42::/64 ]
+    bgp.originate: [ 104.244.42.0/24, 2001:104:244:42::/64, 64.63.0.0/18 ]
     image: srl/ixp-agent:latest
     clab.srl-agents: [ ../../../srl-ixp-agent/ixp-agent.yml ]
     clab.startup-config: |
@@ -53,6 +53,12 @@ nodes:
     bgp.originate: [ 17.17.15.0/24 ] # Based on IRR info
     image: srl/rpki-agent:latest
     clab.srl-agents: [ ../../../srl-rpki-agent/srl-rpki-agent.yml ]
+    clab.startup-config: |
+     set /acl cpm-filter ipv4-filter entry 261 match protocol tcp destination-port operator eq value 8282 
+     set /acl cpm-filter ipv4-filter entry 261 action accept
+     set /acl cpm-filter ipv4-filter entry 262 match protocol tcp source-port operator eq value 8282 
+     set /acl cpm-filter ipv4-filter entry 262 action accept
+     set /network-instance default protocols rpki admin-state enable rpki-server 192.168.121.106
 
   flow-collector:
     device: linux
@@ -69,24 +75,20 @@ nodes:
   rpki:
     device: linux
     # image: cloudflare/gortr # older software
-    # image: rpki/stayrtr # By default uses https://console.rpki-client.org/vrps.json
+    image: rpki/stayrtr # By default uses https://console.rpki-client.org/vrps.json
     # Routinator
-    image: nlnetlabs/routinator
-    clab.cmd: "--verbose server --rtr 0.0.0.0:8282"
+    # image: nlnetlabs/routinator
+    # clab.cmd: "--verbose server --rtr 0.0.0.0:8282"
 
 links:
 - DE-CIX:
-  GlobalConnect:
+  Google:
   Twitter:
     bgp: False  # Let IXP agent do the peering configuration
   Apple:
 
 # Add a direct link with in-vrf peering
-- GlobalConnect:
-  Twitter:
-    bgp: False
-  vrf: test
-
-# - GlobalConnect:
-#   rpki:
-#     ipv6: False
+# - Google:
+#   Twitter:
+#     bgp: False
+#   vrf: test

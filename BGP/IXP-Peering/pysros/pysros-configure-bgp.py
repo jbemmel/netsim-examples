@@ -82,7 +82,7 @@ def add_peers(*, connection, peers):
                             }
                         },
                         "nokia-conf:default-action": {
-                            "action-type": "reject"
+                            "action-type": "reject"   # Or accept with lower preference, optionally adding a community
                         }
                     }
                     connection.candidate.set(

@@ -30,7 +30,9 @@ nodes:
     bgp.as: 15169 # Google AS
     bgp.originate: [ 8.8.8.0/24, 8.8.4.0/24, 1.2.3.0/24 ] # First two are valid in RPKI, last is not
     device: sros
-    clab.type: sr-1
+    # clab.type: sr-1
+    # clab.type: sr-1-24d # with 800G
+    clab.type: sr-1x-48d
     config: [ rpki ]
     clab.startup-config: |
      /configure cflowd admin-state enable sample-profile 1 sample-rate 10

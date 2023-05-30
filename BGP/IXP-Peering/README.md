@@ -59,3 +59,34 @@ A:Apple# info from state /network-instance default bgp-rib afi-safi ipv4-unicast
 ```
 
 Use ```grep -c``` to count number of prefixes having this attribute set
+
+## Generating IRR prefix lists
+
+For SR OS, using [bgpq4](https://github.com/bgp/bgpq4)
+```
+jeroen@jvb-vm:~/srlinux/bgpq4$ ./bgpq4 -nl eltel AS20597
+/configure policy-options
+delete prefix-list "eltel"
+prefix-list "eltel" {
+    prefix 81.9.0.0/20 type exact {
+    }
+    prefix 81.9.32.0/20 type exact {
+    }
+    prefix 81.9.96.0/20 type exact {
+    }
+    prefix 81.222.128.0/20 type exact {
+    }
+    prefix 81.222.160.0/20 type exact {
+    }
+    prefix 81.222.192.0/18 type exact {
+    }
+    prefix 85.249.8.0/21 type exact {
+    }
+    prefix 85.249.224.0/19 type exact {
+    }
+    prefix 89.112.0.0/17 type exact {
+    }
+    prefix 217.170.64.0/19 type exact {
+    }
+}
+```

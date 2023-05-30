@@ -30,12 +30,12 @@ topology:
       startup-config: |
         /configure policy-options policy-statement accept-all default-action action-type accept
         /configure router "Base"
-        autonomous-system 50266
+        autonomous-system ${AS1:=50266}
         interface "i1/1/c1/1" {
             port 1/1/c1/1
             ipv4 {
                 primary {
-                    address 80.249.211.171
+                    address ${IP1:=80.249.211.171}
                     prefix-length 22
                 }
             }
@@ -45,9 +45,9 @@ topology:
             ebgp-default-reject-policy export false import false
             export policy "accept-all"
             group "ebgp" { }
-            neighbor "80.249.208.126" {
+            neighbor "${IP2:=80.249.208.126}" {
                 group "ebgp"
-                peer-as 24875
+                peer-as ${AS2:=24875}
             }
         }
         /configure router "Base" static-routes route 5.132.0.0/17 route-type unicast blackhole admin-state enable
@@ -65,14 +65,14 @@ topology:
         subinterface 0 {
          ipv4 {
             admin-state enable
-            address 80.249.208.126/22 primary
+            address ${IP2:=80.249.208.126}/22 primary
         /network-instance default
         type default
         admin-state enable
         interface ethernet-1/1.0 { }
         protocols {
          bgp {
-            autonomous-system 24875
+            autonomous-system ${AS2:=24875}
             router-id 10.0.0.2
             ebgp-default-policy export-reject-all false import-reject-all false
             export-policy accept-all
@@ -81,8 +81,8 @@ topology:
             }
             group ebgp {
             }
-            neighbor 80.249.211.171 {
-                peer-as 50266
+            neighbor ${IP1:=80.249.211.171} {
+                peer-as ${AS1:=50266}
                 peer-group ebgp
             }
          }

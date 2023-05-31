@@ -121,6 +121,12 @@ In the example above, the prefix 5.132.0.0/17 was validated against RPKI and AS 
 
 To take the above prefix list into account, BGP policies will have to be adjusted. Take a look at [the user guide](https://documentation.nokia.com/srlinux/22-6/SR_Linux_Book_Files/Configuration_Basics_Guide/configb-routing_policies.html) and see if you can figure out how to reject or de-prioritize routes that are not valid.
 
+If you were asked to assess the impact of enabling RPKI, could you tell what percentage of customer routes would be affected?
+Create a custom 'show rpki impact' alias command to illustrate:
+```
+environment alias "show rpki impact" "..."
+```
+
 # 5. Developing and testing custom agents
 
 The source code for the RPKI agent can be found in ```srl-rpki-agent-to-modify.py```, it is mounted under ```/opt/demo-agents/rpki-agent/srl-rpki-agent.py```

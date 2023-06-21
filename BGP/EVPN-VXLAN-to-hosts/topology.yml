@@ -11,7 +11,7 @@ addressing:
     prefix: 28 # not too small
 
 bgp:
-  advertise_loopback: all
+  advertise_loopback: True
   as: 65000 # iBGP AS
   as_list:
     65000: # EVPN overlay with Route Reflectors at spine
@@ -64,15 +64,15 @@ vrfs:
 
 vlans:
   c1-vlan:
-    vni: True
+    vni: 10001
     vrf: customer1
 
   c2-vlan:
-    vni: True
+    vni: 10002
     vrf: customer2
 
   internet:
-    vni: True
+    vni: 10003
     mode: route   # No irb interface -> no l2 vni possible
     vrf: internet
 

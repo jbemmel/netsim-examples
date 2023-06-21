@@ -12,7 +12,7 @@ topology:
       mgmt-ipv4: 192.168.121.101
       kind: srl
       type: 'ixrd2l'
-      image: ghcr.io/nokia/srlinux:23.3.1
+      image: ghcr.io/nokia/srlinux:${SRLINUX_VERSION:=23.3.1}
       startup-config: |
         /interface ethernet-1/1 subinterface 0 type bridged
         /interface ethernet-1/2 subinterface 0 type bridged
@@ -24,9 +24,9 @@ topology:
     sros:
       mgmt-ipv4: 192.168.121.102
       kind: vr-sros
-      type: 'sr-1x-48d' # 48x800G
-      image: vrnetlab/vr-sros
-      license: /Projects/SR_OS_VSR-SIM_license.txt
+      # type: 'sr-1x-48d' # 48x800G, requires 23.3.R1
+      image: vrnetlab/vr-sros:${SROS_VERSION:=23.3.R1}
+      license: /Projects/SR_OS_VSR-SIM_license.txt  # SR_OS_VSR-SIM_R19.txt
       startup-config: |
         /configure policy-options policy-statement accept-all default-action action-type accept
         /configure router "Base"

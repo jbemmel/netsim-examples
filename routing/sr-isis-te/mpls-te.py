@@ -1,6 +1,13 @@
 from box import Box
 from netsim import common
 
+"""
+Adds custom epipe link->node (interface) attributes
+"""
+def init(topology: Box) -> None:
+    attr = topology.defaults.attributes
+    attr.interface.traffic_engineering_path = 'list'
+
 def pre_link_transform(topo: Box) -> None:
   """
   Processes links with 'traffic-engineering-path' attribute, and resolves

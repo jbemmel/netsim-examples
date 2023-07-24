@@ -15,15 +15,16 @@ plugin: [ epipe, mpls-te ]
 defaults:
   # custom_link_types: [ epipe ]
   device: sros
-  devices:
-   sros:
+  # devices:
+   # sros:
     # interface_name: 1/1/%d # sr-a4 does not use connectors
-    interface_name: 1/x1/1/c%d # sr-1s use connectors and XIOM
+    # interface_name: 1/x1/1/c{ifindex} # sr-1s use connectors and XIOM
+  attributes.interface.macsec: 'str'
   providers:
     clab:
       devices:
         srlinux:
-          provider_type: ixr6  # Need IXR for MPLS support
+          provider_type: ixr6  # Need IXR for MPLS support, requires license
         sros:
           provider_type: sr-1s-macsec # Added to vrnetlab to support macsec
 
@@ -36,7 +37,7 @@ isis.bfd.ipv4: True
 groups:
   sros:
     members: [ r1,r4 ]
-    config: [ sdp-epipe.j2, macsec.j2 ]
+    config: [ sdp-epipe.j2 ] # removed macsec.j2
   srlinux:
     members: [ r2,r3 ]
   hosts:

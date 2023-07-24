@@ -1,5 +1,13 @@
 from box import Box
 
+"""
+Adds custom epipe link->node (interface) attributes
+"""
+def init(topology: Box) -> None:
+    attr = topology.defaults.attributes
+    attr.interface.epipe = 'str'
+    attr.interface.local_epipe = 'int'
+
 def post_transform(topo: Box) -> None:
   """
   Processes links with 'epipe' attribute, and resolves to the loopback IP of the peer

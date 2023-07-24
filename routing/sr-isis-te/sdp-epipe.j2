@@ -34,9 +34,10 @@ updates:
    - sap-id: "{{ port_id }}"
      admin-state: enable
 
-# - path: configure/port[port-id={{port_id}}]/ethernet
-#   val:
-#    mtu: {{ 1514 + 32 }} # To support MACsec
+- path: configure/port[port-id={{port_id}}]/ethernet
+  val:
+   # mtu: {{ 1514 + 32 }} # To support MACsec
+   mode: access
 
 {% endfor %}
 
@@ -44,6 +45,8 @@ updates:
 
 {% for l in interfaces if 'local_epipe' in l %}
 {% for l2 in interfaces if 'local_epipe' in l2 and l.ifindex<l2.ifindex and l.local_epipe==l2.local_epipe %}
+{% set l_ifname = l.ifname + ('/1' if 'c' in l.ifname else '') %}
+{% set l2_ifname = l2.ifname + ('/1' if 'c' in l2.ifname else '') %}
 {% set svc_id = 100 + l.ifindex %}
 - path: configure/service/epipe[service-name=local-{{l.local_epipe}}]
   val:
@@ -51,9 +54,20 @@ updates:
    customer: "1"
    service-id: {{ svc_id }}
    sap:
-   - sap-id: "{{ l.ifname }}{{ '/1' if 'c' in l.ifname else '' }}"
+   - sap-id: "{{ l_ifname }}"
      admin-state: enable
-   - sap-id: "{{ l2.ifname }}{{ '/1' if 'c' in l2.ifname else '' }}"
+   - sap-id: "{{ l2_ifname }}"
      admin-state: enable
+
+- path: configure/port[port-id={{l_ifname}}]/ethernet
+  val:
+   # mtu: {{ 1514 + 32 }} # To support MACsec
+   mode: access
+
+- path: configure/port[port-id={{l2_ifname}}]/ethernet
+  val:
+   # mtu: {{ 1514 + 32 }} # To support MACsec
+   mode: access
+
 {% endfor %}
 {% endfor %}

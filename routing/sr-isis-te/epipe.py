@@ -1,7 +1,7 @@
 from box import Box
 
 """
-Adds custom epipe link->node (interface) attributes
+Adds custom epipe and local_epipe link->node (interface) attributes
 """
 def init(topology: Box) -> None:
     attr = topology.defaults.attributes

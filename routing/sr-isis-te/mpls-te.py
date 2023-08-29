@@ -2,7 +2,7 @@ from box import Box
 from netsim import common
 
 """
-Adds custom epipe link->node (interface) attributes
+Adds custom traffic_engineering_path link->node (interface) attributes
 """
 def init(topology: Box) -> None:
     attr = topology.defaults.attributes

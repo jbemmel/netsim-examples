@@ -1,0 +1,71 @@
+{# epipe modeled as a virtual link between r1-r4 #}
+delete:
+{%- for l in interfaces if 'service' in l and l.service.type=='epipe' and 'vlan' in l and 'access_id' in l.vlan %}
+- configure/service/vpls[service-name=vlan{{l.vlan.access_id}}]
+{% endfor -%}
+updates:
+{% for l in interfaces if 'service' in l and l.service.type=='epipe' %}
+{% set port_id = l.ifname + ('/1' if 'c' in l.ifname else '') %}
+{% if l.neighbors is defined %}
+{% for n in l.neighbors if 'service_peer' in n %}
+
+# Note: could set md-auto-id service range
+- path: configure/service/epipe[service-name={{l.service.name}}]
+  val:
+   admin-state: enable
+   customer: "1"
+   service-id: {{ l.service.id }}
+   # service-mtu: {{ 1514 + 32 }}
+{% if 'evpn' in n and 'epipe_eth_tag' in n.evpn %}
+   bgp:
+   - bgp-instance: 1
+   bgp-evpn:
+    evi: 1
+    local-attachment-circuit:
+    - name: {{ hostname }}
+      eth-tag: {{ l.evpn.epipe_eth_tag }}
+    remote-attachment-circuit:
+    - name: {{ n.node }}
+      eth-tag: {{ n.evpn.epipe_eth_tag }}
+    mpls:
+    - bgp-instance: 1
+      # admin-state: enable
+      ecmp: {{ 2 if 'ixr' in clab.type else 32 }}
+      # ingress-replication-bum-label: True # TODO, requires reserved label range
+      auto-bind-tunnel:
+       resolution: any
+       ecmp: {{ 2 if 'ixr' in clab.type else 32 }}
+{% else %}
+   spoke-sdp:
+   - sdp-bind-id: "{{ l.ifindex }}:{{ l.service.id }}"
+     admin-state: enable
+     # Could enable BFD here too...
+
+- path: configure/service/sdp[sdp-id={{l.ifindex}}]
+  val:
+   admin-state: enable
+   delivery-type: mpls
+   far-end:
+    ip-address: "{{ n.service_peer|ipaddr('address') }}"
+
+{% endif %}
+
+{% endfor %}
+{% elif 'vlan' in l and 'access_id' in l.vlan %}
+- path: configure/port[port-id={{port_id}}]/ethernet
+  val:
+   # mtu: {{ 1514 + 32 }} # To support MACsec
+   mode: access
+   encap-type: dot1q
+
+- path: configure/service/epipe[service-name={{l.service.name}}]
+  val:
+   admin-state: enable
+   customer: "1"
+   service-id: {{ l.service.id }}
+   sap:
+   - sap-id: "{{ port_id }}:{{ l.vlan.access_id }}"
+     admin-state: enable
+
+{% endif %}
+{% endfor %}

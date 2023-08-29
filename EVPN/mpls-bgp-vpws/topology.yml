@@ -1,0 +1,87 @@
+message: |
+  This lab builds an MPLS L2 VPN (VPWS RFC8214 aka Kompella) using BGP across PE-routers 
+  All hosts connected to VLAN 1000 (ce10-ce60) should be able to ping each other.
+
+  see https://documentation.nokia.com/cgi-bin/dbaccessfilename.cgi/3HE14991AAAHTQZZA01_V1_7450%20ESS%207750%20SR%207950%20XRS%20Advanced%20Configuration%20Guide%20for%20Releases%20up%20to%2022.7.R1-Part%20II.pdf
+  page 425
+
+provider: clab
+
+defaults.device: sros
+
+plugin: [ epipe ]
+
+bgp.as: 65000
+
+mpls.ldp: True # default
+
+vlans:
+  core:
+    id: 1
+    mode: bridge
+  tenant:
+    mode: bridge
+
+# evpn.vlans: [ evpn-epipe ] # Currently not set automatically
+
+services:
+ epipe-1:
+  id: 1
+  type: epipe
+
+groups:
+  hosts:
+    members: [ ce10, ce20, ce60 ]
+    device: linux
+  core:
+    members: [ pe2, pe3, pe4, pe5 ]
+    module: [ bgp, isis, mpls, vlan, evpn ]
+    config: [ sdp-epipe.j2 ]
+  mtu:
+    members: [ mtu1, mtu6 ]
+
+nodes: 
+ mtu1:
+  module: [ mpls ]
+  mpls.ldp: False
+ pe2:
+  bgp.rr: True
+ pe3:
+ pe4:
+ pe5:
+ mtu6:
+  module: [ isis, mpls ]
+  # clab.image: vrnetlab/vr-sros:22.10.R1
+ ce10:
+ ce20:
+ ce60:
+
+links:
+- ce10:
+  mtu1:
+  vlan.access: tenant
+- ce20:
+  pe2:
+  vlan.access: tenant
+- mtu1:
+  pe2:
+   service: epipe-1
+  vlan.access: core # Using 'tenant' causes the epipe link attribute to get lost
+- mtu1:
+  pe3:
+  vlan.access: tenant
+- pe2-pe3
+- pe2:
+   evpn.epipe_eth_tag: 220
+  pe4:
+   evpn.epipe_eth_tag: 26
+  service: epipe-1
+- pe2-pe5
+- pe3-pe4
+- pe3-pe5
+- pe4:
+  mtu6:
+  service: epipe-1 # static epipe, no EVPN
+  # No access VLAN -> SDP
+- pe5-mtu6
+- mtu6-ce60

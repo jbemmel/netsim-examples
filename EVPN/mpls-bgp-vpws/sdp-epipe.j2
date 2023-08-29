@@ -2,7 +2,7 @@
 delete:
 {%- for l in interfaces if 'service' in l and l.service.type=='epipe' and 'vlan' in l and 'access_id' in l.vlan %}
 - configure/service/vpls[service-name=vlan{{l.vlan.access_id}}]
-{% endfor -%}
+{% endfor %}
 updates:
 {% for l in interfaces if 'service' in l and l.service.type=='epipe' %}
 {% set port_id = l.ifname + ('/1' if 'c' in l.ifname else '') %}

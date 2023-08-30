@@ -1,8 +1,9 @@
-{# epipe modeled as a virtual link between r1-r4 #}
-delete:
-{%- for l in interfaces if 'service' in l and l.service.type=='epipe' and 'vlan' in l and 'access_id' in l.vlan %}
-- configure/service/vpls[service-name=vlan{{l.vlan.access_id}}]
-{% endfor %}
+{%- set to_del = [] -%}
+{%- for l in interfaces if 'service' in l and l.service.type=='epipe' and 'vlan' in l and 'access_id' in l.vlan -%}
+{{- to_del.append( "configure/service/vpls[service-name=vlan" + l.vlan.access_id|string + "]" ) -}}
+{%- endfor -%}
+delete: {{ to_del }}
+
 updates:
 {% for l in interfaces if 'service' in l and l.service.type=='epipe' %}
 {% set port_id = l.ifname + ('/1' if 'c' in l.ifname else '') %}

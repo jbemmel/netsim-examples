@@ -9,7 +9,7 @@ provider: clab
 
 defaults.device: sros
 
-plugin: [ epipe ]
+plugin: [ epipe, vpls ] # Defines the 'epipe' type service
 
 bgp.as: 65000
 
@@ -28,6 +28,20 @@ services:
  epipe-1:
   id: 1
   type: epipe
+ epipe-2:
+  id: 2
+  type: epipe
+ # no-type:
+ # id: 3
+ mpls-vpls-1:
+  id: 3
+  type: vpls
+
+ # Test
+ # vxlan-1:
+ #  id: 4
+ #  type: vxlan # epipe
+ #  evpn.evi: 1234 # only for 'vxlan' type service
 
 groups:
   hosts:
@@ -35,22 +49,23 @@ groups:
     device: linux
   core:
     members: [ pe2, pe3, pe4, pe5 ]
-    module: [ bgp, isis, mpls, vlan, evpn ]
+    module: [ bgp, isis, mpls, vlan, evpn, service ]
     config: [ sdp-epipe.j2 ]
   mtu:
     members: [ mtu1, mtu6 ]
 
 nodes: 
  mtu1:
-  module: [ mpls ]
+  module: [ mpls, vlan, service ]
   mpls.ldp: False
  pe2:
   bgp.rr: True
+  clab.type: sr-1s
  pe3:
  pe4:
  pe5:
  mtu6:
-  module: [ isis, mpls ]
+  module: [ isis, mpls, service ]
   # clab.image: vrnetlab/vr-sros:22.10.R1
  ce10:
  ce20:
@@ -59,29 +74,58 @@ nodes:
 links:
 - ce10:
   mtu1:
-  vlan.access: tenant
+   service:
+    mpls-vpls-1:
+     sap-id: 1
+  # vlan.access: tenant
+  pool: l2only
 - ce20:
   pe2:
-  vlan.access: tenant
+   service: 
+    epipe-1: # static epipe, no EVPN
+     sap-id: 1 # Instead of an access VLAN
+  # vlan.access: tenant
+  pool: l2only
 - mtu1:
+   service:
+    mpls-vpls-1:
+     spoke-sdp: 2
   pe2:
-   service: epipe-1
-  vlan.access: core # Using 'tenant' causes the epipe link attribute to get lost
+   service: 
+    epipe-1: # Can use string for single plain service ref? Hard
+  # vlan.access: core # Using 'tenant' causes the epipe link attribute to get lost
 - mtu1:
+   service:
+    mpls-vpls-1:
+     spoke-sdp: 3
   pe3:
   vlan.access: tenant
 - pe2-pe3
 - pe2:
-   evpn.epipe_eth_tag: 220
+   service:
+    epipe-1:
+     evpn.eth_tag: 220
+    epipe-2:
+     evpn.eth_tag: 221
   pe4:
-   evpn.epipe_eth_tag: 26
-  service: epipe-1
+   service:
+    epipe-1:
+     evpn.eth_tag: 26
+    epipe-2:
+     evpn.eth_tag: 27
+
 - pe2-pe5
 - pe3-pe4
 - pe3-pe5
 - pe4:
+   service: 
+    epipe-1: # static epipe, no EVPN
+     spoke-sdp: 1
   mtu6:
-  service: epipe-1 # static epipe, no EVPN
+   service: 
+    epipe-1: # TODO VPLS
   # No access VLAN -> SDP
 - pe5-mtu6
-- mtu6-ce60
+- mtu6:
+  ce60:
+  pool: l2only

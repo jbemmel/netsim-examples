@@ -1,9 +1,15 @@
 message: |
   This lab builds an MPLS L2 VPN (VPWS RFC8214 aka Kompella) using BGP across PE-routers 
-  All hosts connected to VLAN 1000 (ce10-ce60) should be able to ping each other.
+  All hosts connected to access VLAN 1000 (ce11,ce16) should be able to ping each other.
 
   see https://documentation.nokia.com/cgi-bin/dbaccessfilename.cgi/3HE14991AAAHTQZZA01_V1_7450%20ESS%207750%20SR%207950%20XRS%20Advanced%20Configuration%20Guide%20for%20Releases%20up%20to%2022.7.R1-Part%20II.pdf
   page 425
+
+  https://documentation.nokia.com/cgi-bin/dbaccessfilename.cgi/3HE14991AAAITQZZA01_V1_Advanced%20Configuration%20Guide%20Part%20II%20for%20Releases%20Up%20To%2022.10.R3.pdf
+  page 494
+
+  When deployed, the hosts should be able to reach each other:
+  docker exec -it clab-mpls-bgp-vpw-ce11 ping -c3 172.16.1.8
 
 provider: clab
 
@@ -12,8 +18,22 @@ defaults.device: sros
 plugin: [ epipe, vpls ] # Defines the 'epipe' type service
 
 bgp.as: 65000
+bgp.activate:
+ ipv4: [ebgp] # Don't use BGP ipv4 family for ibgp
 
 mpls.ldp: True # default
+
+addressing:
+  core:
+    # mtu: 1600 # For MPLS, cannot set this on a pool
+    ipv4: 10.11.0.0/16
+    prefix: 31
+  
+  hosts:
+    ipv4: 192.168.0.0/20
+    prefix: 24
+
+defaults.interfaces.mtu: 8192
 
 vlans:
   core:
@@ -45,7 +65,7 @@ services:
 
 groups:
   hosts:
-    members: [ ce10, ce20, ce60 ]
+    members: [ ce11, ce16 ]
     device: linux
   core:
     members: [ pe2, pe3, pe4, pe5 ]
@@ -65,42 +85,34 @@ nodes:
  pe4:
  pe5:
  mtu6:
-  module: [ isis, mpls, service ]
+  module: [ isis, mpls, service, vlan ]
+  config: [ sdp-vpls.j2 ]
   # clab.image: vrnetlab/vr-sros:22.10.R1
- ce10:
- ce20:
- ce60:
+ ce11:
+ ce16:
 
 links:
-- ce10:
+- ce11:
   mtu1:
-   service:
-    mpls-vpls-1:
-     sap-id: 1
-  # vlan.access: tenant
-  pool: l2only
-- ce20:
-  pe2:
-   service: 
-    epipe-1: # static epipe, no EVPN
-     sap-id: 1 # Instead of an access VLAN
-  # vlan.access: tenant
-  pool: l2only
-- mtu1:
-   service:
-    mpls-vpls-1:
-     spoke-sdp: 2
-  pe2:
-   service: 
-    epipe-1: # Can use string for single plain service ref? Hard
-  # vlan.access: core # Using 'tenant' causes the epipe link attribute to get lost
-- mtu1:
-   service:
-    mpls-vpls-1:
-     spoke-sdp: 3
-  pe3:
+   ipv4: False
+  pool: hosts
   vlan.access: tenant
-- pe2-pe3
+- mtu1:
+  vlan.access: tenant
+  pe2:
+   ipv4: False
+   service: 
+    epipe-1:
+     sap-id: vlan # Matches VLAN
+  # vlan.access: core # Using 'tenant' causes the epipe link attribute to get lost
+  pool: core
+- mtu1:
+   vlan.access: tenant
+  pe3:
+  # vlan.access: tenant
+- pe2:
+  pe3:
+  pool: core
 - pe2:
    service:
     epipe-1:
@@ -113,19 +125,40 @@ links:
      evpn.eth_tag: 26
     epipe-2:
      evpn.eth_tag: 27
-
-- pe2-pe5
-- pe3-pe4
-- pe3-pe5
+  pool: core
+- pe2:
+  pe5:
+  pool: core
+- pe3:
+  pe4:
+  pool: core
+- pe3:
+  pe5:
+  pool: core
 - pe4:
    service: 
     epipe-1: # static epipe, no EVPN
      spoke-sdp: 1
   mtu6:
    service: 
-    epipe-1: # TODO VPLS
+    mpls-vpls-1:
+     spoke-sdp: 1
   # No access VLAN -> SDP
-- pe5-mtu6
+  pool: core
+- pe5:
+   service: 
+    epipe-1: # static epipe, no EVPN
+     spoke-sdp: 1
+  mtu6:
+   service: 
+    mpls-vpls-1:
+     spoke-sdp: 2
+  pool: core
 - mtu6:
-  ce60:
-  pool: l2only
+   ipv4: False
+   service: 
+    mpls-vpls-1:
+     sap-id: "vlan" # Must match VLAN, using 'vlan' removes the access vlan
+  ce16:
+  vlan.access: tenant # This gives correct IP addressing, vpls plugin removes the vlan
+  pool: hosts

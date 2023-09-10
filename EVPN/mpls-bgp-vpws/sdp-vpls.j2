@@ -1,8 +1,8 @@
 updates:
 {% for l in interfaces if 'service' in l %}
 {%  set port_id = l.ifname + ('/1' if 'c' in l.ifname else '') %}
-{%  for s1 in l.service if s1.type=="epipe" %}
-- path: configure/service/epipe[service-name={{s1.name}}]
+{%  for s1 in l.service if s1.type=="vpls" %}
+- path: configure/service/vpls[service-name={{s1.name}}]
   val:
    admin-state: enable
    customer: "1"
@@ -26,25 +26,25 @@ updates:
     local-attachment-circuit:
     - name: {{ hostname }}
       eth-tag: {{ s1.evpn.eth_tag }}
-{%    for n in l.neighbors|default([]) %}
-{%     for s2 in n.service|default([]) if s1.name==s2.name and 'evpn' in s2 and 'eth_tag' in s2.evpn %}
-    remote-attachment-circuit:
-    - name: {{ n.node }}
-      eth-tag: {{ s2.evpn.eth_tag }}
-{%     endfor %}
-{%    endfor %}
 
 {%   elif 'spoke-sdp' in s1 %}
+   endpoint:
+   - name: ENDPOINT
+
    spoke-sdp:
    - sdp-bind-id: "{{ l.ifindex }}:{{ s1['spoke-sdp'] }}"
      admin-state: enable
      # Could enable BFD here too...
+     endpoint:
+      name: ENDPOINT
+     stp:
+      admin-state: disable
 
 - path: configure/service/sdp[sdp-id={{l.ifindex}}]
   val:
    admin-state: enable
    delivery-type: mpls
-   ldp: True # Not listed in user guide, but guess this should match peer config
+   ldp: True
    far-end:
 {%    for n in l.neighbors|default([]) if 'system_ip' in n and loop.first %}
     ip-address: "{{ n.system_ip }}"

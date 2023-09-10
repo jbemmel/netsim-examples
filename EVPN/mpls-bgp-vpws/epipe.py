@@ -28,20 +28,20 @@ def post_transform(topo: Box) -> None:
     print("JvB epipe post_transform")
 
     # Need to modify node.interfaces, not global topo.links
-    for node in topo.nodes.values():
-        print(f"JvB: Check {node.interfaces}")
-        for link in node.get("interfaces", []):
-            for s in link.get("service", []):
-                print(f"Found service: {s.name} s={s}")
-                if s.type == "epipe":
-                    for n in link.get("neighbors", []):
-                        for s2 in n.get("service", []):
-                            if s.name == s2.name:
-                                peer_ip = topo.nodes[n.node].loopback.ipv4
-                                print(f"JvB: Resolved {link.service} to {peer_ip}")
-                                n.epipe_peer = peer_ip
-                                break
-                # eth_tag is in neighbor too
+    # for node in topo.nodes.values():
+    #    print(f"JvB: Check {node.interfaces}")
+    #    for link in node.get("interfaces", []):
+    #        for s in link.get("service", []):
+    #            print(f"Found service: {s.name} s={s}")
+    #            if s.type == "epipe":
+    #                for n in link.get("neighbors", []):
+    #                    for s2 in n.get("service", []):
+    #                        if s.name == s2.name:
+    #                            peer_ip = topo.nodes[n.node].loopback.ipv4
+    #                            print(f"JvB: Resolved {link.service} to {peer_ip}")
+    #                            n.epipe_peer = peer_ip
+    #                            break
+    # eth_tag is in neighbor too
 
     # Check consistency of models
     # print( f"POST: nodes={topo.nodes}" )

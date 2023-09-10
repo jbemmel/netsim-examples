@@ -1,5 +1,7 @@
 from box import Box
 
+# from netsim.utils import log
+
 """
 Adds a new 'vpls' type service with evpn attributes
 """
@@ -23,23 +25,26 @@ def init(topology: Box) -> None:
 
 def post_transform(topo: Box) -> None:
     """
-    Processes links with 'vpls' type services
+    Processes links with 'vpls' type services, remove any vlans
     """
     print("JvB vpls post_transform")
 
     # Need to modify node.interfaces, not global topo.links
     # for node in topo.nodes.values():
-    #     print(f"JvB: Check {node.interfaces}")
-    #     for link in node.get("interfaces", []):
-    #         for s in link.get("service", {}):
+    #     for intf in node.get("interfaces", []):
+    #         for s in intf.get("service", {}):
     #             print(f"Found service: {s.name} s={s}")
     #             if s.type == "vpls":
-    #                 for n in link.get("neighbors", []):
-    #                     if "service" in n:
-    #                         peer_ip = topo.nodes[n.node].loopback.ipv4
-    #                         print(f"JvB: Resolved {link.service} to {peer_ip}")
-    #                         n.epipe_peer = peer_ip
-    #             # eth_tag is in neighbor too
+    #                 if 'sap-id' in s and s['sap-id'] == 'vlan':
+    #                     if 'vlan' not in intf:
+    #                         log.error(
+    #                             f'No access VLAN on {intf.name} node {node.name}',
+    #                             log.MissingValue,
+    #                             "vpls",
+    #                         )
+    #                         return False
+    #                     s['sap-id'] = None if 'access_id' in intf.vlan else 1 # TODO pick first VLAN in trunk?
+    #                     intf.pop('vlan',None) # TODO remove SVI too
 
     # Check consistency of models
     # print( f"POST: nodes={topo.nodes}" )

@@ -1,0 +1,78 @@
+# Copyright 2023 Nokia
+# Licensed under the BSD 3-Clause License.
+# SPDX-License-Identifier: BSD-3-Clause
+
+---
+#
+# Sample Ansible playbook to backup and configure SR OS using Netconf
+#
+
+- name: Configure SR OS using Netconf
+  hosts: sros
+  gather_facts: False
+  vars:
+   ansible_connection: netconf
+   ansible_network_os: nokia.sros.md
+  tasks:
+    - name: Backup current config in XML format
+      ansible.netcommon.netconf_config:
+        backup: yes
+        backup_options:
+          filename: backup-{{ hostname }}.cfg
+          dir_path: /tmp
+    - name: Define the openconfig interface filter
+      set_fact:
+        filter:
+          interfaces:
+            "@xmlns": "http://openconfig.net/yang/interfaces"
+            interface:
+              name: 1/1/c1/1
+
+    - name: "Configure using openconfig format"
+      ansible.netcommon.netconf_config:
+        content: |
+         <config>
+            <interfaces xmlns="http://openconfig.net/yang/interfaces" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+             <interface>
+                 <name>1/1/c1/1</name>
+                 <config>
+                     <name>1/1/c1/1</name>
+                     <type xmlns:iana-if-type="urn:ietf:params:xml:ns:yang:iana-if-type">iana-if-type:ethernetCsmacd</type>
+                 </config>
+             </interface>
+            </interfaces>
+         </config>
+
+    - name: Get the pre-change config using the filter
+      ansible.netcommon.netconf_get:
+        source: running
+        filter: "{{ filter }}"
+        display: native
+      register: pre
+    
+    - debug: var=pre
+
+    - name: Update the description
+      ansible.utils.update_fact:
+        updates:
+        - path: pre.output.data.interfaces.interface.config.description
+          value: "Configured by ansible {{ 100 | random }}"
+      register: updated
+    
+    - name: Apply the new configuration
+      ansible.netcommon.netconf_config:
+        content:
+          config:
+            interfaces: "{{ updated.pre.output.data.interfaces }}"
+    
+    - name: Get the post-change config using the filter
+      ansible.netcommon.netconf_get:
+        source: running
+        filter: "{{ filter }}"
+        display: native
+      register: post
+    
+    - name: Show the differences between the pre and post configurations
+      ansible.utils.fact_diff:
+        before: "{{ pre.output.data|ansible.utils.to_paths }}"
+        after: "{{ post.output.data|ansible.utils.to_paths }}"

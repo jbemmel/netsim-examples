@@ -1,0 +1,186 @@
+message: |
+  Sample REN topology featuring MPLS SR
+
+provider: clab
+
+bgp.as: 65000
+
+# plugin: [proxy-arp]
+plugin: [ bgp.session ]
+
+groups:
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+  switches:
+    members: [ research, university1, university2 ]
+    device: srlinux
+    module: [ vlan,vxlan,bgp,evpn,vrf,gateway ]
+  bgp_free_core: # P-nodes
+    members: [ r3, r5 ]
+    device: sros
+    module: [ isis, sr ]
+  mpls:
+    members: [ r4,r6,r8,r9 ]
+    device: sros
+    module: [ vlan,isis,bgp,sr,bfd ]
+    # evpn.vlans: [ mpls-core ] # Not set automatically for MPLS transport
+    # ospf.bfd.strict: True
+  other_vendors:
+    members: [ r1,r2 ]
+    device: frr
+    module: [ vlan,isis,bgp,evpn,bfd ]
+
+# bgp.as: 65000
+
+bgp.as_list:
+  65000:
+    members: [ r1,r2,r4,r6,r8,r9 ]
+  65100:
+    members: [ research, university1, university2 ]  # iBGP for EVPN VXLAN
+
+vrfs:
+  tenant:
+    evpn.transit_vni: True
+    # proxy_arp: True # Enable proxy ARP on all interfaces that are part of this vrf
+
+addressing:
+  core-links:
+    ipv4: 192.0.0.0/24
+    prefix: 31
+    ipv6: True # ipv6 lla
+
+  dualstack-ten:
+    ipv4: 192.168.0.0/16
+    prefix: 24
+    ipv6: 2001:192:168::/48
+
+vlans:
+  red-hot:
+    vrf: tenant
+    pool: dualstack-ten
+    gateway: True # anycast gateway default: last of every ipv4/ipv6 subnet
+  blue:
+    vrf: tenant
+  green:
+    vrf: tenant
+
+#   mpls-core:
+#     mode: bridge
+#     # vni: False # not allowed
+#     evpn: # JvB: enable EVPN, should trigger EVI generation
+#       # transport: mpls # evpn module would default to vxlan if module is present
+
+# evpn.vlans: [ mpls-core ] # Not set automatically for MPLS transport
+
+nodes:
+  h1:
+  h2:
+  h3:
+  h4:
+  
+  research:
+  university1:
+  university2:
+
+  r1: # TODO Cisco
+  r2: # TODO Juniper
+  r3:
+  r4:
+   bgp.rr: True # Make R4 a BGP route reflector
+  r5:
+  r6:
+  # r7: not used
+  r8:
+  r9:
+
+links:
+- h1:
+  research:
+    vlan.access: red-hot
+- h2:
+  university1:
+    vlan.access: red-hot
+- h3:
+  university1:
+    vlan.access: blue
+- h4:
+  university2:
+    vlan.access: green
+
+- research:
+    bgp.allowas_in: True # Accept routes for own AS via EBGP
+  r8:
+- research:
+    bgp.allowas_in: True # Accept routes for own AS via EBGP
+  r9:
+- university2:
+    bgp.allowas_in: True # Accept routes for own AS via EBGP
+  r4:
+
+- r8:
+  r3:
+  pool: core-links
+- r4:
+  r3:
+  pool: core-links
+- r6:
+  r3:
+  pool: core-links
+- r5:
+  r3:
+  pool: core-links
+- r9:
+  r5:
+  pool: core-links
+- r8:
+  r5:
+  bandwidth: 4000
+  isis.cost: 4 # 400G
+  pool: core-links
+- r4:
+  r5:
+  bandwidth: 4000
+  isis.cost: 4 # 400G
+  pool: core-links
+- r6:
+  r5:
+  pool: core-links
+
+- r8:
+  r9:
+  pool: core-links
+
+- r4:
+  r6:
+  pool: core-links
+
+# Other vendors
+- r1:
+  r2:
+  pool: core-links
+- r1:
+  r3:
+  pool: core-links
+- r2:
+  r4:
+  pool: core-links
+
+- r1:
+  university1:
+    bgp.allowas_in: True # Accept routes for own AS via EBGP
+
+validate:
+  ping:
+    description: IPv4 ping H1,H2,H3 => H4
+    wait: 10
+    wait_msg: Wait for IPv4 interfaces to become operational
+    nodes: [ h1,h2,h3 ]
+    plugin: ping('h4')
+  
+  # ping6:
+  #   description: IPv6 ping H1 => H2
+  #   wait: 10
+  #   wait_msg: Wait for IPv6 interfaces to become operational
+  #   nodes: [ h1,h2,h3 ]
+  #   plugin: ping(nodes.h4.interfaces[0].ipv6,af='ipv6')

@@ -114,3 +114,11 @@ links:
     vlan.access: mpls-core
   pool: srv6-links
 - s2-c2
+
+validate:
+  ping:
+    description: Pinging H4 from H1,H2,H3
+    nodes: [ h1,h2,h3 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 15
+    plugin: ping('h4')

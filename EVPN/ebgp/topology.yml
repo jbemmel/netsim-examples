@@ -1,0 +1,37 @@
+defaults.device: eos
+provider: clab
+
+plugin: [ fabric, check.config ]
+
+addressing.p2p.ipv4: True
+evpn.as: 65000
+evpn.session: [ ebgp ]                          # Activate EVPN on EBGP sessions
+bgp.community.ebgp: [ standard, extended ]      # Propagate extended community over EBGP
+bgp.sessions.ipv4: [ ebgp ]                     # ... and activate IPv4 AF only on EBGP sessions
+
+fabric:
+  spines: 2
+  leafs: 4
+  spine.bgp.as: 65100
+  leaf.bgp.as: '{ 65000 + count }'
+
+groups:
+  _auto_create: True
+  leafs:
+    module: [ bgp, vlan, vxlan, evpn ]
+    config: [ ebgp.ecmp ]
+  spines:
+    module: [ bgp, evpn ]
+  hosts:
+    members: [ H1, H2, H3, H4 ]
+    device: linux
+
+vlan.mode: bridge
+vlans:
+  orange:
+    links: [ H1-L1, H2-L3 ]
+  blue:
+    links: [ H3-L2, H4-L4 ]
+
+tools:
+  graphite:
